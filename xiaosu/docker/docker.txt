@@ -1,0 +1,17 @@
+
+
+
+
+### 将修改过的镜像保存成一个新的
+docker commit 96b7e62b67b0 myredis:myredis
+
+### 查看 IMAGE ID   
+docker images
+
+### 将镜像导出
+docker save 96b7e62b67b0 -o /root/terdis.tar
+
+### 将镜像导入
+docker load -i /root/terdis.tar
+
+

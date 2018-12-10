@@ -1,0 +1,181 @@
+
+
+### 将修改过的镜像保存成一个新的
+docker commit 96b7e62b67b0 myredis:myredis
+
+### 查看 IMAGE ID   
+docker images
+
+### 将镜像导出
+docker save 96b7e62b67b0 -o /root/myphp7.tar
+##
+docker save cayhphp7:latest -o  /root/alpine-php7.tar
+
+### 将镜像导入
+docker load -i /root/myphp7.tar
+
+
+docker build -t burgessng:latest .
+
+
+
+Alpine安装PHP7
+##时区
+apk add tzdata
+cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+apk del tzdata
+
+
+apk update
+apk --update --no-cache add geoip geoip-dev pcre gcc libxslt gd openssl-dev pcre-dev zlib-dev build-base linux-headers libxslt-dev gd-dev libstdc++ libgcc patch logrotate supervisor inotify-tools
+apk --update --no-cache add shadow openssh bash libxml2-dev libjpeg-turbo-dev libpng-dev libxpm-dev freetype-dev gettext-dev libmcrypt-dev binutils curl
+rm -rf /var/cache/apk/*
+
+addgroup www  
+adduser -G www -D -s /sbin/nologin www  
+
+wget 172.17.0.1/php-7.2.10.tar.gz
+wget https://curl.haxx.se/download/curl-7.61.1.tar.gz
+tar zxf curl-7.61.1.tar.gz
+cd curl-7.61.1
+./configure --prefix=/work/php7.2/curl 
+make && make install 
+
+
+
+tar xvf php-7.2.10.tar.gz
+cd php-7.2.10
+./configure \
+   --prefix=/work/php7.2/php \
+   --with-config-file-path=/work/php7.2/php/etc \
+   --with-config-file-scan-dir=/work/php7.2/php/etc/php.d \
+   --disable-ipv6 \
+   --enable-bcmath \
+   --enable-calendar \
+   --enable-exif \
+   --enable-fpm \
+   --with-fpm-user=www \
+   --with-fpm-group=www \
+   --enable-ftp \
+   --enable-gd-jis-conv \
+   --enable-gd-native-ttf \
+   --enable-inline-optimization \
+   --enable-mbregex \
+   --enable-mbstring \
+   --enable-mysqlnd \
+   --enable-opcache \
+   --enable-pcntl \
+   --enable-shmop \
+   --enable-soap \
+   --enable-sockets \
+   --enable-static \
+   --enable-sysvsem \
+   --enable-wddx \
+   --enable-xml \
+   --with-curl=/work/php7.2/curl/ \
+   --with-gd=/usr \
+   --with-jpeg-dir \
+   --with-freetype-dir=/work/php7.2/freetype \
+   --with-xpm-dir \
+   --with-png-dir \
+   --with-gettext \
+   --with-iconv \
+   --with-libxml-dir=/work/php7.2/  \
+   --with-mcrypt \
+   --with-mhash \
+   --with-mysqli=mysqlnd \
+   --with-pdo-mysql=mysqlnd \
+   --with-openssl \
+   --with-xmlrpc \
+   --with-zlib \
+   --without-pear \
+   --disable-debug \
+   --disable-fileinfo \
+   --enable-zip \
+   --disable-rpath \
+   --with-iconv-dir \
+   --with-imap-ssl \
+   --with-ttf \
+   --with-pcre-regex  \
+   --enable-sysvmsg \
+   --disable-phpdbg 
+
+make && make install 
+
+
+
+
+## alpine安装插件时报以下错误
+### Cannot find autoconf. Please check your autoconf installation and the
+### $PHP_AUTOCONF environment variable. Then, rerun this script.
+## http://ftp.gnu.org/gnu/autoconf/
+
+http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.gz
+
+tar zxvf autoconf-2.69.tar.gz
+tar zxvf m4-1.4.18.tar.gz
+ 
+cd m4-1.4.18
+./configure && make && make install
+
+cd ../autoconf-2.69
+./configure && make && make install
+
+
+### http://php.net/manual/zh/ref.fileinfo.php
+## PHP安装amqp插件
+tar -zxf amqp-1.9.3.tgz
+cd amqp-1.9.3
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/amqp.so
+
+## PHP安装fileinfo插件
+cd /php-5.6.36/ext/fileinfo
+apk add file file-dev
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /usr/local/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/fileinfo.so
+
+## PHP安装redis插件
+tar redis-4.1.1.tgz
+cd redis-4.1.1
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/redis.so
+
+## PHP安装gearman插件
+yum -y install libgearman libgearman-devel
+tar zxvf gearman-1.1.2.tgz
+cd gearman-1.1.2
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/gearman.so
+#####
+
+
+
+
+
+
+
+
+
+

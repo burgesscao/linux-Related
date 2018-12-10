@@ -1,0 +1,29 @@
+
+
+##启动
+/work/redis-4.0.9/src/redis-server /work/redis-4.0.9/redis.conf 
+
+## 连接redis 
+/work/redis-4.0.9/src/redis-cli -h 127.0.0.1 -p 7700 -a burgess70qkK
+
+
+
+#####操作
+[root@golds-wddxzx1 redis]# /work/redis-4.0.9/src/redis-cli -h 127.0.0.1 -p 7700 -a burgess70qkK
+##创建cyhtest的key与值
+127.0.0.1:7700> set cyhtest burgess
+OK
+##查看cyhtest的key值
+127.0.0.1:7700> get cyhtest
+"burgess"
+## 查看所有key
+127.0.0.1:7700> keys *
+1) "cyhtest"
+##删除指定key
+127.0.0.1:7700> del cyhtest
+(integer) 1
+##查看所有key
+127.0.0.1:7700> keys *
+(empty list or set)
+##退出
+127.0.0.1:7700> exit

@@ -1,0 +1,51 @@
+
+
+
+yum install -y wget lrzsz gcc gcc-c++ pcre pcre-devel openssl openssl-devel zlib zlib-devel lrzsz vim 
+
+## redis版本 redis-4.0.10.tar
+tar zxvf redis.tar.gz -C /
+
+##关闭防火墙
+##systemctl stop firewalld
+##setenforce 0
+
+## 需要更改 redis.conf 的IP与密码
+## 需要更改 sentinel.conf 的 master的ip与端口
+
+## 必须要做好允许访问端口与密码配置
+
+## 启动master
+/work/redis/redis_master/src/redis-server /work/redis/redis_master/redis.conf
+
+## 启动slave
+/work/redis/redis_slave/src/redis-server /work/redis/redis_slave/redis.conf
+
+
+
+# 启动master 哨兵
+/work/redis/redis_master/src/redis-sentinel /work/redis/redis_master/sentinel.conf
+
+# 启动slave 哨兵
+/work/redis/redis_slave/src/redis-sentinel /work/redis/redis_slave/sentinel.conf
+
+##nohup /work/redis/src/redis-sentinel /work/redis/sentinel.conf &
+############################# sentinel 哨兵
+
+
+
+
+## 测试 master
+[root@localhost redis]# /work/redis/redis_master/src/redis-cli -a burgess -h 192.168.233.159 -p 7700
+192.168.233.159:7700> set name aaa
+"aaa"
+192.168.233.159:7700> INFO replication
+## 测试
+
+## 测试 slave
+[root@localhost redis]# /work/redis/redis_slave/src/redis-cli -a burgess -h 192.168.233.159 -p 7711
+192.168.233.159:7711> get name 
+"aaa"
+192.168.233.159:7711> INFO replication
+
+## 测试

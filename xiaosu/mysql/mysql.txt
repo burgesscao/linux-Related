@@ -1,0 +1,72 @@
+
+Mysql 官方网站
+https://dev.mysql.com/doc/refman/5.6/en/linux-installation-yum-repo.html
+
+
+wget https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
+yum localinstall mysql80-community-release-el7-1.noarch.rpm -y
+
+## 通过以下命令检查MySQL Yum存储库是否已成功添加
+yum repolist enabled | grep "mysql.*-community.*"
+
+## 检查MySQL Yum存储库是否已成功添加
+yum repolist all | grep mysql
+
+############################
+## 查看MySQL Yum存储库中的所有子存储库，并查看其中哪些被启用或禁用
+##（对于Fedora，用dnf替换 命令中的 yum）：
+## yum repolist all | grep mysql
+## 
+## 如果你的平台支持 yum-config-manager，你可以通过发布这些命令来实现这一点，
+## 这些命令禁用了5.7系列的子库，并启用5.6系列的子库：
+## sudo yum-config-manager --disable mysql57-community
+## sudo yum-config-manager --enable mysql56-community
+##
+## /etc/yum.repos.d/mysql-community.repo 文件来选择发行版系列
+## 找到要配置的子存储库的条目，然后编辑该enabled选项。
+## 指定 enabled=0禁用子库，或 enabled=1启用子库
+## 通过运行以下命令并检查其输出来验证正确的子库是否已启用和禁用
+##（对于Fedora，请使用dnf替换命令中的yum）
+## repolist enabled | grep mysql
+############################
+
+## 安装MySQL
+yum install mysql-community-server -y
+
+## 卸载软件不卸载依赖
+rpm -e --nodeps mysql-community-server
+
+## start MySQL
+service mysqld start
+
+## 查看启动情况
+service mysqld status
+
+## 超级用户的密码被设置并存储在错误日志文件中。要显示它，请使用以下命令
+sudo grep 'temporary password' /var/log/mysqld.log
+
+## 连接MySQL
+mysql -uroot -p
+
+## 更改root密码
+mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'Aa123qwe~';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##报错
+ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)
+     #解决
+     echo "skip-grant-tables" >> /etc/my.conf

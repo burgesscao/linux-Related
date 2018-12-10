@@ -1,0 +1,11 @@
+---
+- hosts: DX_web 
+  vars:
+  remote_user: www
+  tasks:
+  - copy:
+      src: /root/Burgess.sh
+      dest: /home/www/Burgess.sh
+      owner: www
+      group: www
+      mode: 0644

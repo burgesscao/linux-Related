@@ -1,0 +1,20 @@
+
+
+
+tar zxvf apache-tomcat-9.0.8.tar.gz
+
+mv apache-tomcat-9.0.8 /work/
+
+vi /work/apache-tomcat-9.0.8/bin/startup.sh
+##### 在22行下面插入
+# Better OS/400 detection: see Bugzilla 31132
+export JAVA_HOME=/work/jdk1.8.0_171
+export TOMCAT_HOME=/work/apache-tomcat-9.0.8
+export CATALINA_HOME=/work/apache-tomcat-9.0.8
+export CLASS_PATH=$JAVA_HOME/bin/lib:$JAVA_HOME/jre/lib:$JAVA_HOME/lib/tool.jar
+export PATH=$PATH:/work/jdk1.8.0_171/bin:/work/apache-tomcat-9.0.8/bin
+##### 在22行下面插入
+
+/work/apache-tomcat-9.0.8/bin/startup.sh
+
+127.0.0.1:8080

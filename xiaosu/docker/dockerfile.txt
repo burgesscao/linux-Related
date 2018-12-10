@@ -1,0 +1,81 @@
+
+vim Dockerfile
+
+FROM  centos
+##使用Centos为底层系统
+##标记
+MAINTAINER Burgess
+##安装nginx所需要依赖包
+RUN yum install -y wget gcc gcc-c++ pcre pcre-devel openssl openssl-devel zlib zlib-devel
+##创建nginx启动用户
+RUN useradd www
+##眏谢nginx到容器里 并解压
+ADD nginx-1.14.0.tar.gz /root/
+## 启动脚本
+ADD 1.sh /root/
+##进入到nginx配置下
+WORKDIR /root/nginx-1.14.0
+##安装nginx
+RUN ./configure --prefix=/work/nginx --user=www --group=www --conf-path=/work/nginx/conf/nginx.conf --http-log-path=/work/nginx/logs/access.log --error-log-path=/work/nginx/logs/error.log --pid-path=/work/nginx/run/nginx.pid --lock-path=/work/nginx/run/nginx.lock --with-http_ssl_module --with-http_stub_status_module --with-http_degradation_module --with-http_gzip_static_module --with-pcre
+##安装nginx
+RUN make &&  make install
+## 
+RUN chmod 770 /root/1.sh
+##启动nginx
+RUN /work/nginx/sbin/nginx -c /work/nginx/conf/nginx.conf
+##开放端口
+EXPOSE 80 443
+
+
+
+
+### 生成镜像
+docker build -t centos-nginx:test ./
+
+## 启动
+docker run -d -it -p 80:80 -v /work/nginx/html/:/work/nginx/html/ --privileged=true 74deca5e45a8 bash /root/1.sh
+
+
+
+[root@localhost ~]# cat 1.sh
+#!/bin/sh
+##
+
+N_ginxre=1
+while (( "$N_ginxre < 3" ))
+do
+    N_ginx=`ps -ef |grep -v grep |grep -c nginx`
+    if [ $N_ginx < 1 ];then
+        echo 0
+    else
+        /work/nginx/sbin/nginx -c /work/nginx/conf/nginx.conf
+        sleep 3
+    fi
+done
+
+
+
+
+
+
+
+
+
+####  基于Alpine
+FROM alpine
+MAINTAINER Burgess
+RUN apk --update --no-cache add geoip geoip-dev pcre libxslt gd openssl-dev pcre-dev zlib-dev build-base linux-headers libxslt-dev gd-dev openssl-dev libstdc++ libgcc patch logrotate supervisor inotify-tools
+RUN rm -rf /var/cache/apk/*
+ADD nginx-1.14.0.tar.gz /root/
+ADD 1.sh /root/
+WORKDIR /root/nginx-1.14.0
+RUN ./configure --prefix=/work/nginx --user=nobody --group=nobody --conf-path=/work/nginx/conf/nginx.conf --http-log-path=/work/nginx/logs/access.log --error-log-path=/work/nginx/logs/error.log --pid-path=/work/nginx/run/nginx.pid --lock-path=/work/nginx/run/nginx.lock --with-http_ssl_module --with-http_stub_status_module --with-http_degradation_module --with-http_gzip_static_module --with-pcre
+RUN  apk add bash
+RUN make &&  make install
+RUN chmod 770 /root/1.sh
+RUN /work/nginx/sbin/nginx -c /work/nginx/conf/nginx.conf
+EXPOSE 80 443
+
+
+
+docker run -d -it -p 80:80 -v /work/nginx/html/:/work/nginx/html/ --privileged=true f87c2eef3925 bash /root/1.sh

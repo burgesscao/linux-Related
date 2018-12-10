@@ -1,0 +1,53 @@
+
+## 启动
+/usr/bin/python /usr/bin/supervisord
+
+
+## 
+/usr/local/supervisor/conf/
+
+
+
+
+##########重启supervisorct  CronService   #SignPdf  Sms 这二个是MQ与短信的
+[root@golds-wddxzx1 www]# supervisorctl
+CronService                      RUNNING   pid 471, uptime 1 day, 7:01:51
+SignPdf                          RUNNING   pid 31142, uptime 3 days, 2:13:33
+Sms                              RUNNING   pid 31957, uptime 20 days, 20:32:11
+supervisor> restart CronService
+CronService: stopped
+CronService: started
+######################PHP定时任务
+
+
+
+
+
+
+
+
+##############重启supervisor  千万别用
+[root@golds-wddxzx1 html]# supervisorctl  
+CronService                      RUNNING   pid 4889, uptime 15:46:53
+SignPdf                          RUNNING   pid 31142, uptime 4 days, 18:58:40
+Sms                              RUNNING   pid 31957, uptime 22 days, 13:17:18
+supervisor> reload
+Really restart the remote supervisord process y/N? y
+Restarted supervisord
+supervisor> status
+CronService                      STARTING  
+SignPdf                          STARTING  
+Sms                              STARTING  
+supervisor> status
+CronService                      RUNNING   pid 31705, uptime 0:00:05
+SignPdf                          RUNNING   pid 31704, uptime 0:00:05
+Sms                              RUNNING   pid 31703, uptime 0:00:05
+##############重启supervisor  千万别用
+
+
+
+
+
+
+### 任务路径
+/usr/local/supervisor/conf

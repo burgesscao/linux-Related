@@ -1,0 +1,77 @@
+
+
+官网地址
+https://www.elastic.co/guide/en/elasticsearch/reference/current/_installation.html
+
+
+安装
+curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.0.tar.gz
+
+tar -xvf elasticsearch-6.3.0.tar.gz
+cd elasticsearch-6.3.0/bin
+启动
+./elasticsearch
+
+## 注意 不能使用root启动
+
+groupadd elsearch
+useradd elsearch -g elsearch
+chown -R elsearch:elsearch elasticsearch-6.3.0
+
+错误
+## max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
+## vi /etc/sysctl.conf 
+## vm.max_map_count=655360
+刷新
+## sysctl -p
+
+
+错误
+## max file descriptors [4096] for elasticsearch process likely too low, increase to at least [65536]
+## max number of threads [1024] for user [lishang] likely too low, increase to at least [2048]
+## vi /etc/security/limits.conf 
+## * soft nofile 65536
+## * hard nofile 131072  
+## * soft nproc 2048  
+## * hard nproc 4096
+
+
+##
+mkdir /data
+chown -R elsearch:elsearch /data/
+su - elsearch 
+mkdir -p es/data
+mkdir -p es/logs
+
+
+vim config/elasticsearch.yml 
+cat config/elasticsearch.yml |grep -v ^#
+#####
+cluster.name: my-application
+node.name: node-1
+path.data: /path/to/data
+path.logs: /path/to/logs
+bootstrap.memory_lock: false
+bootstrap.system_call_filter: false
+network.host: 192.168.233.171
+#####
+
+
+## install sql
+git clone https://github.com/NLPchina/elasticsearch-sql.git
+cd elasticsearch-sql/src/site-server
+npm install express --save
+node node-server.js
+
+
+
+
+
+
+
+
+
+
+
+
+

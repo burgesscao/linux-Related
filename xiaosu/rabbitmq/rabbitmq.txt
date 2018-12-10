@@ -1,0 +1,306 @@
+
+rpm -Uvh http://mirrors.yun-idc.com/epel/epel-release-latest-7.noarch.rpm
+
+yum install erlang -y
+
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.6/rabbitmq-server-3.6.6-1.el7.noarch.rpm
+yum install rabbitmq-server-3.6.6-1.el7.noarch.rpm
+
+
+cd /var/log/rabbitmq/
+
+tail -f rabbit\@localhost
+
+## 停止启动
+service rabbitmq-server stop
+service rabbitmq-server start
+
+## 查看启动情况
+service rabbitmq-server status
+
+ss -nltu |grep 5672
+
+## 允许端口5672
+firewall-cmd --zone=public --add-port=5672/tcp --permanent
+firewall-cmd --reload 
+
+## 开启网页版 并允许端口
+rabbitmq-plugins enable rabbitmq_management
+firewall-cmd --zone=public --add-port=15672/tcp --permanent
+firewall-cmd --reload
+
+
+cd /var/log/rabbitmq/
+
+tail -f rabbit\@localhost
+
+## 使用Pika Python客户端
+http://www.rabbitmq.com/tutorials/tutorial-three-python.html
+## 使用Pika Python客户端
+
+## 安装pip 并安装pika消息接入与发送
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py
+pip list --outdated
+pip install pika
+
+
+
+cd /etc/rabbitmq
+vi send.py
+#########send.py 发送
+#!/usr/bin/env python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+channel.basic_publish(exchange='',
+                      routing_key='cyh',
+                      body='Hello Burgess')
+print(" [x] Sent 'Hello Burgess'")
+connection.close()
+#########send.py
+
+vi receive.py
+#########receive.py 接收
+#!/usr/bin/env python
+
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+def callback(ch, method, properties, body):
+    print(" [x] Received %r" % body)
+
+channel.basic_consume(callback,
+                      queue='cyh',
+                      no_ack=True)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
+#########receive.py
+
+
+
+#### MQ 操作
+# 添加虚拟机
+rabbitmqctl add_vhost vhost_DX
+
+# 删除虚拟机
+rabbitmqctl delete_vhost vhost_DX
+
+# 查看虚拟机列表
+rabbitmqctl list_vhosts
+
+“/”是rabbitmq默认的虚拟机，之前默认连接的都是它
+
+# 创建一个用户
+rabbitmqctl add_user burgess 123qwe
+
+# 设置访问权限  后边三个.*分别代表：配置权限、写权限、读权限
+rabbitmqctl set_permissions -p vhost_DX burgess ".*" ".*" ".*"
+
+# 改密码
+rabbimqctl change_password burgess 12345678
+
+# 删除用户
+rabbitmqctl delete_user burgess
+
+# 显示所有队列
+rabbitmqctl  list_quenens   ##显示所有队列
+
+# 显示所有用户
+rabbitmqctl list_users
+
+
+
+    1   mkdir -p /data/source
+    2  yum -y install openssl openssl-devel unixODBC unixODBC-devel rsync zip ncurses-devel gcc gcc-c++ zlib zlib-devel xmlto
+    3  cd /data/source/
+    4  ll
+    5  tar -zxf otp_src_20.3.tar.gz
+    6  cd otp_src_20.3
+    7  ./configure --prefix=/usr/local/erlang --without-javac
+    8  make
+    9  make install
+   10  source /etc/profile
+   11  /usr/local/erlang/bin/erl
+   12  cd ..
+   13  mkdir /usr/local/rabbitmq-server-3.6.15
+   14  ln -s /usr/local/rabbitmq-server-3.6.15 /usr/local/rabbitmq
+   15  xz -d -k rabbitmq-server-3.6.15.tar.xz
+   16  tar -xf rabbitmq-server-3.6.15.tar
+   17  cd rabbitmq-server-3.6.15
+   18  vim Makefile 
+   19  make
+   20  make install
+   21  source /etc/profile
+   22  cd ..
+   23  ll
+   24  source /etc/profile
+   25  hostname golds-mq1
+   26  vim /etc/profile
+   27  source /etc/profile
+   28  cd /data/source/
+   29  ll
+   30  tar -zxf make-4.2.tar.gz
+   31  cd make-4.2
+   32  ./configure
+   33  make
+   34  make install
+   35  mv /usr/bin/make /usr/bin/make.bak
+   36  ln -s /usr/local/bin/make /usr/bin/make
+   37  cd ..
+   38  make -v
+   39  ll
+   40  rm -rf otp_src_20.3
+   41  rm -rf rabbitmq-server-3.6.15
+   42  ll
+   43  mkdir /usr/local/erlang_otp_20.3
+   44  ln -s /usr/local/erlang_otp_20.3 /usr/local/erlang
+   45  tar -zxf otp_src_20.3.tar.gz
+   46  cd otp_src_20.3
+   47  ./configure --prefix=/usr/local/erlang --without-javac
+   48  make
+   49  make install
+   50  /usr/local/erlang/bin/erl
+   51  cd ..
+   52  mkdir /usr/local/rabbitmq-server-3.6.15
+   53  ln -s /usr/local/rabbitmq-server-3.6.15 /usr/local/rabbitmq
+   54  xz -d -k rabbitmq-server-3.6.15.tar.xz
+   55  tar -xf rabbitmq-server-3.6.15.tar
+   56  cd rabbitmq-server-3.6.15
+   57  vim Makefile 
+   58  make
+   59  make install
+   60  mkdir -p /usr/local/rabbitmq/etc/rabbitmq
+   61  ln -s /usr/local/rabbitmq/etc/rabbitmq /etc/rabbitmq
+   62  mkdir -p /usr/local/rabbitmq/logs/rabbitmq
+   63  mkdir -p /usr/local/rabbitmq/data/rabbitmq/mnesia
+   64  mkdir -p /usr/local/rabbitmq/run
+   65  ——source /etc/profile
+   66  source /etc/profile
+   67  hostname golds-mq1
+   68  cd /usr/local
+   69  ll
+   70  mkdir /usr/local/erlang_otp_20.3
+   71  ln -s /usr/local/erlang_otp_20.3 /usr/local/erlang
+   72  ll
+   73  source /etc/profile
+   74  ll
+   75  rm -rf erlang*
+   76  rm -rf rabbitmq*
+   77  ll
+   78  cd rabbitmq
+   79  ll
+   80  cd etc/rabbitmq
+   81  ll
+   82  vim rabbitmq.config
+   83  vim rabbitmq-env.conf
+   84  vim /etc/profile
+   85  source /etc/profile
+   86  ifconfig
+   87  vim /etc/sysconfig/network
+   88  vim /etc/hosts
+   89  hostname golds-mq1
+   90  rabbitmq-server start -detached 
+   91  rabbitmq-plugins enable rabbitmq_management
+   92  systemctl start firewalld
+   93  firewall-cmd --query-port=4369/tcp
+   94  firewall-cmd --query-port=40000/tcp
+   95  firewall-cmd --query-port=5672/tcp
+   96  firewall-cmd --query-port=15672/tcp
+   97  firewall-cmd --add-port=4369/tcp
+   98  firewall-cmd --add-port=40000/tcp
+   99  firewall-cmd --add-port=5672/tcp
+  100  firewall-cmd --add-port=15672/tcp
+  101  rabbitmqctl add_vhost XSJC
+  102  rabbitmqctl add_user madmin 9oRmng1RljRKAjAK
+  103  rabbitmqctl set_user_tags madmin management  
+  104  rabbitmqctl set_permissions -p / madmin '.*' '.*' '.*'
+  105  rabbitmqctl set_permissions -p XSJC madmin '.*' '.*' '.*'
+  106  rabbitmqctl add_user mxuser 3UQT0FxvhP2vnWaJ
+  107  rabbitmqctl set_permissions -p XSJC mxuser '.*' '.*' '.*'
+  108  rabbitmqctl add_user mcuser 3UQT0FxvhP2vnWaJ
+  109  rabbitmqctl set_permissions -p XSJC mcuser '.*' '.*' '.*'
+  110  rabbitmqctl stop
+  111  cat /usr/local/rabbitmq/run/.erlang.cookie
+  112  scp /usr/local/rabbitmq/run/.erlang.cookie root@golds-mq2:/usr/local/rabbitmq/run/.erlang.cookie
+  113  cat /usr/local/rabbitmq/run/.erlang.cookie
+  114  rabbitmq-server start -detached
+  115  rabbitmqctl cluster_status
+  116  rabbitmqctl set_policy -p / ha-all "^" '{"ha-mode":"all","ha-sync-mode":"automatic"}'
+  117  bbit@golds-mq1
+  118  rabbitmqctl cluster_status
+  119  cd /usr/local/rabbitmq/plugins
+  120  yum install lrzsz
+  121  rz
+  122  rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+  123  rabbitmqctl stop
+  124  rabbitmq-server start -detached
+  125  rabbitmqctl cluster_status
+  126  systemctl stop firewalld
+  127  rabbitmqctl stop
+  128  rabbitmq-server start -detached
+  129  rabbitmqctl set_user_tags madmin administrator  
+  130  systemctl start firewalld
+  131  firewall-cmd --add-port=4369/tcp --permanent
+  132  firewall-cmd --add-port=40000/tcp --permanent
+  133  firewall-cmd --add-port=5672/tcp --permanent
+  134  firewall-cmd --add-port=15672/tcp --permanent
+  135  firewall-cmd --query-port=4369/tcp
+  136  firewall-cmd --query-port=40000/tcp
+  137  firewall-cmd --query-port=5672/tcp
+  138  firewall-cmd --query-port=15672/tcp
+  139  firewall-cmd --query-port=40000/tcp
+  140  firewall-cmd --add-port=40000/tcp --permanent
+  141  firewall-cmd --query-port=40000/tcp
+  142  firewall-cmd --query-port=40000/tcp  --permanent
+  143  cd /usr/local/rabbitmq/logs/rabbitmq/
+  144  ll
+  145  tail -f rabbit\@golds-mq1.log 
+  146  top
+  147  netstat -tnlp
+  148  history
+  149  systemctl restart firewalld
+  150  firewall-cmd help
+  151  systemctl stop firewalld
+  152  systemctl disabled firewalld
+  153  systemctl disable firewalld
+  154  ls
+  155  ps -ef 
+  156  cat /etc/passwd
+  157  ls
+  158  cd /etc/rabbitmq/
+  159  ls
+  160  cat rabbitmq.config 
+  161  ps -ef |grep rabbitmq
+  162  pwd
+  163  cd /usr/local/
+  164  ls
+  165  cd rabbitmq
+  166  ls
+  167  ls etc
+  168  rabbitmqctl ?
+  169  rabbitmqctl list_users
+  170  ps -ef 
+  171  ss -ntlu
+  172  p a
+  173  ip a
+  174  rabbitmqctl list_users
+  175  ls
+  176  exit
+  177  ip a
+  178  exit
+  179  ls
+  180  ip a
+  181  ls
+  182  ps -ef 

@@ -1,0 +1,10 @@
+tomcat 
+
+## 停止
+/usr/local/apache-tomcat-9.0.0.M17/bin/shutdown.sh
+
+
+## 启动
+/usr/local/apache-tomcat-9.0.0.M17/bin/startup.sh
+
+

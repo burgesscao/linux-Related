@@ -1,0 +1,86 @@
+
+########
+tar zxvf logstash-6.3.0.tar.gz
+mv logstash-6.3.0 /work/
+cd /work/
+
+
+vi /work/logstash-6.3.0/test.conf
+####
+# 设定输入的位置
+input {
+    ## 使用file作为数据输入
+    file {
+	    ## 获取日志文件路径
+        path => ['/work/nginx/logs/access.log']
+		## 从文件的开始处读取，end从文件末尾开始读取
+        start_position => beginning
+    }
+}
+# 设定过滤条件
+filter {
+    grok {
+            match => {
+                    "message" => "%{HTTPD_COMBINEDLOG} \"%{DATA:realclient}\""
+            }
+            remove_field => "message"
+    }
+    date {
+            match => ["timestamp","dd/MMM/YYYY:H:m:s Z"]
+            remove_field => "timestamp"
+    }
+}
+# 设定输出的位置
+output {
+    stdout {
+	    ## 输出至屏幕
+        codec => rubydebug
+    }
+}
+####
+
+
+## 测试配置文件与环境
+/work/logstash-6.3.0/bin/logstash -t -f /work/logstash-6.3.0/test.conf
+
+## 启动
+/work/logstash-6.3.0/bin/logstash -f /work/logstash-6.3.0/test.conf
+
+
+新开一个窗口启动Nginx
+刷新网页获取信息 curl 127.0.0.1
+
+
+
+
+###########RPM安装
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+vi /etc/yum.repos.d/logstash.repo
+###
+[logstash-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+###
+
+yum install logstash -y
+
+
+
+##logstash配置文件
+vim /etc/logstash/logstash.yml
+
+##logstash的JVM配置文件
+vim /etc/logstash/jvm.options
+
+## 测试配置文件与环境
+/usr/share/logstash/bin/logstash -t  -f  /etc/logstash/conf.d/test.conf
+
+## 启动
+/usr/share/logstash/bin/logstash  -f  /etc/logstash/conf.d/test.conf
+

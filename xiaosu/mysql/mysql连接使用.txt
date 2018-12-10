@@ -1,0 +1,17 @@
+
+数据库连接
+##需要通过通道连接 
+mysql -h 127.0.0.1 -P3090 -udxserver -p
+
+
+
+mysql -h rm-bp1dtq9qelfb2880c.mysql.rds.aliyuncs.com -ucall_center -p
+
+mysql -h rm-bp1dtq9qelfb2880c.mysql.rds.aliyuncs.com -ucall_188 -p
+
+...
+
+
+库:xsblcxa
+用户:zca
+密码:!t+R!nQe2018

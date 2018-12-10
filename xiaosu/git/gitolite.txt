@@ -1,0 +1,35 @@
+Gitolite
+
+##使用root
+mkdir /root/.ssh
+ssh-keygen -t rsa
+mv /root/.ssh/id_rsa.pub /home/git/.ssh/admin.pub
+cd /home/git
+git clone git://github.com/sitaramc/gitolite
+mkdir -p /home/git/bin
+yum install -y perl*
+
+
+
+su git
+cd /home/git
+gitolite/install -to $HOME/bin
+cd /home/git/.ssh
+/home/git/bin/gitolite setup -pk admin.pub
+
+
+
+##使用root
+mkdir -p /date/gitolite
+cd /date/gitolite
+git clone git@192.168.233.132:/home/git/repositories/gitolite-admin.git/
+
+
+
+windows下：
+某一文件夹下鼠标右键，Git Bash Here
+输入ssh-keygen.ext
+一路回车生成密钥对
+默认C:\Users\Administrator\.ssh下id_rsa.pub
+更改名称，比如：lisi.pub然后发送给管理员，管理员上传至gitolite-admin下的keydir目录，conf下的gitolite.conf配置用户权限，需要跟pub文件名一致,然后add commit push
+

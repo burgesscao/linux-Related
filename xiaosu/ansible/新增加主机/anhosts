@@ -1,0 +1,48 @@
+#!/bin/bash
+##Burgess
+## 新增加主机到anshible 并使用账号密码方式发送ssh证书
+## 新增加主机到hosts到对应的组下
+
+#echo "input group name: "
+#read G_group
+
+#echo "input ip address: "
+#read I_ip
+
+#echo "input user name: "
+#read U_user
+
+#echo "input passwd: "
+#read P_pswd
+
+G_group=$1
+I_ip=$2
+U_user=$3
+P_pswd=$4
+
+## 为删除保存的密码做准备
+cat /etc/ansible/hosts > /etc/ansible/hosts_bk
+
+## 写入密码 通过ansible发送
+echo \[$G_group\] >> /etc/ansible/hosts
+echo $I_ip ansible_user="$U_user" ansible_ssh_pass="$P_pswd" >> /etc/ansible/hosts
+
+## 为新增加的主机加到组
+N_group=`grep -vE ^'(#|$)' /etc/ansible/hosts_bk |grep $G_group |wc -l`
+if [ $N_group == 0 ];then
+    echo \[$G_group\] >> /etc/ansible/hosts_bk
+    echo $I_ip ansible_user="$U_user" >> /etc/ansible/hosts_bk
+else
+## 获取组与行号，并在组下一行增加 主机
+    R_row=`grep -vnE ^'(#|$)' /etc/ansible/hosts_bk |grep $G_group | awk -F":" '{print $1}'`
+    sed -i ''$R_row'a '$I_ip' ansible_user='$U_user'' /etc/ansible/hosts_bk
+
+fi
+
+## 把证书分发到远程机上
+#ansible-playbook pushssh.ymal
+ansible $G_group -m  authorized_key  -a "user=$U_user key='{{ lookup('file', '/root/.ssh/id_dsa.pub') }}'"
+
+###
+sleep 10
+cat /etc/ansible/hosts_bk > /etc/ansible/hosts

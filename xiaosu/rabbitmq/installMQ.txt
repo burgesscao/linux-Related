@@ -1,0 +1,202 @@
+
+
+systemctl stop firewalld
+setenforce 0
+
+yum install -y lrzsz vim wget
+yum install -y *epel* gcc-c++ unixODBC unixODBC-devel openssl-devel ncurses-devel
+
+wget http://distfiles.macports.org/erlang/otp_src_20.1.tar.gz
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.15/rabbitmq-server-generic-unix-3.6.15.tar.xz
+
+vim /etc/hosts
+####
+192.168.233.132    mq01
+192.168.233.177    mq02
+####
+
+hostnamectl status
+
+tar zxvf otp_src_20.1.tar.gz
+cd otp_src_20.1
+./configure --prefix=/usr/local/bin/erlang --without-javac
+make && make install
+
+
+
+cd ..
+yum install -y xz
+xz -d rabbitmq-server-generic-unix-3.6.15.tar.xz
+tar -xvf rabbitmq-server-generic-unix-3.6.15.tar -C /usr/local/
+
+echo "export PATH=$PATH:/usr/local/bin/erlang/bin:/usr/local/rabbitmq_server-3.6.15/sbin" >> /etc/profile
+source /etc/profile
+
+
+rabbitmq-plugins enable rabbitmq_management
+
+# 启动
+rabbitmq-server -detached
+
+# 添加虚拟机
+rabbitmqctl add_vhost burgesscyh
+# 创建一个用户
+rabbitmqctl add_user  madmin 123456
+# 设置访问权限  后边三个.*分别代表：配置权限、写权限、读权限
+rabbitmqctl set_permissions -p "/" admin ".*" ".*" ".*"
+# 设置权限
+rabbitmqctl set_user_tags madmin administrator
+
+
+
+##  mq01改hostsname
+## hostnamectl --static set-hostname mq01
+scp /root/.erlang.cookie root@my02:/root/
+
+
+
+##  mq02改hostsname
+hostnamectl --static set-hostname mq02
+
+### 在mq02上操作组成集群
+rabbitmqctl stop_app
+rabbitmqctl join_cluster rabbit@mq01
+rabbitmqctl start_app
+
+# 查看集群
+rabbitmqctl cluster_status
+
+# 查看状态
+rabbitmqctl status
+
+
+#### 重启
+rabbitmqctl stop
+rabbitmq-server -detached
+
+# 启动rabbitmq，-detached代表后台守护进程方式启动。
+rabbitmq-server -detached
+
+
+#### MQ 操作
+# 添加虚拟机
+rabbitmqctl add_vhost vhost_DX
+
+# 删除虚拟机
+rabbitmqctl delete_vhost vhost_DX
+
+# 查看虚拟机列表
+rabbitmqctl list_vhosts
+
+“/”是rabbitmq默认的虚拟机，之前默认连接的都是它
+
+# 创建一个用户
+rabbitmqctl add_user burgess 123qwe
+
+# 设置访问权限  后边三个.*分别代表：配置权限、写权限、读权限
+rabbitmqctl set_permissions -p vhost_DX burgess ".*" ".*" ".*"
+
+# 改密码
+rabbimqctl change_password burgess 12345678
+
+# 删除用户
+rabbitmqctl delete_user burgess
+
+# 显示所有队列
+rabbitmqctl list_queues   ##显示所有队列
+
+
+# 显示所有用户
+rabbitmqctl list_users
+
+########### 消费
+## 使用Pika Python客户端
+http://www.rabbitmq.com/tutorials/tutorial-three-python.html
+## 使用Pika Python客户端
+
+## 安装pip 并安装pika消息接入与发送
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py
+pip list --outdated
+pip install pika
+
+mkdir /etc/rabbitmq
+
+cd /etc/rabbitmq
+vi send.py
+#########send.py 发送
+#!/usr/bin/env python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+channel.basic_publish(exchange='',
+                      routing_key='cyh',
+                      body='Hello Burgess')
+print(" [x] Sent 'Hello Burgess'")
+connection.close()
+#########send.py
+
+vi receive.py
+#########receive.py 接收
+#!/usr/bin/env python
+
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+def callback(ch, method, properties, body):
+    print(" [x] Received %r" % body)
+
+channel.basic_consume(callback,
+                      queue='cyh',
+                      no_ack=True)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
+#########receive.py
+########### 消费
+
+
+
+
+
+#####
+
+vim /usr/local/rabbitmq_server-3.6.15/etc/rabbitmq/rabbitmq-env.conf
+##
+#!/bin/bash
+HOME=/usr/local/rabbitmq/run
+RABBITMQ_LOG_BASE=/usr/local/rabbitmq/logs/rabbitmq
+RABBITMQ_MNESIA_BASE=/usr/local/rabbitmq/data/rabbitmq/mnesia	
+## 
+
+
+vim /usr/local/rabbitmq_server-3.6.15/etc/rabbitmq/rabbitmq.config
+####
+[
+	{
+		rabbit, [{tcp_listeners,[5672]},
+			{heartbeat, 60},
+			{cluster_partition_handling, autoheal},
+			{vm_memory_high_watermark, 0.66},
+			{disk_free_limit, {mem_relative, 2.0}},
+			{channel_operation_timeout, 30000}
+		]
+	},
+	{
+		rabbitmq_management, [{listener, [{port, 15672}]}]
+	},
+	{
+		kernel,[{inet_dist_listen_min, 40000},{inet_dist_listen_max, 45000}]
+	}
+].
+####

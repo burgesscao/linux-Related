@@ -1,0 +1,16 @@
+xmailx
+
+yum install mailx
+mailx -V
+vim /etc/mail.rc
+####
+set from=163mail@163.com
+set smtp=smtp.163.com
+set smtp-auth-user=163mail@163.com
+set smtp-auth-password=
+set smtp-auth=login
+####
+
+cat error.txt | mailx -v -s 'hello' '3629796354@qq.com'
+
+

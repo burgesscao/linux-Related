@@ -1,0 +1,221 @@
+安装Ansile
+yum install epel-release -y
+yum install ansible -y
+
+
+
+配置Ansible管理节点和主机的连接
+# 生成ssh key
+ssh-keygen
+# 拷贝ssh key到远程主机，ssh的时候就不需要输入密码了
+ssh-copy-id remoteuser@remoteserver
+# ssh的时候不会提示是否保存key
+ssh-keyscan remote_servers >> ~/.ssh/known_hosts
+
+验证SSH配置
+ssh remoteuser@remoteserver
+
+
+
+Ansible管理哪些主机
+/etc/ansible/hosts
+####例子
+mail.example.com
+
+[webservers]
+foo.example.com
+bar.example.com
+
+[dbservers]
+one.example.com
+two.example.com
+three.example.com
+####例子
+
+
+
+检查ansible安装环境
+ansible all -m ping -u bruce
+
+
+执行命令
+ansible all -a "/bin/echo hello"
+ansible all -a "/usr/sbin/ip a"
+
+拷贝文件 web组的所有机
+ansible web -m copy -a "src=/etc/hosts dest=/tmp/hosts"
+
+
+安装包远程主机（组）web安装yum包acme
+ansible web -m yum -a "name=docker state=present" 
+
+
+添加用户
+ansible all -m user -a "name=foo password=<crypted password here>"
+
+下载git包
+ansible web -m git -a "repo=git://foo.example.org/repo.git dest=/srv/myapp version=HEAD"
+
+
+启动服务
+ansible web -m service -a "name=httpd state=started"
+ 
+ 
+查看远程主机的全部系统信息
+ansible all -m setup
+
+
+Ansible用脚本管理主机
+
+## 执行脚本playbook的方法
+ansible-playbook deploy.yml
+
+检查yaml文件的语法是否正确
+ansible-playbook 3.yml --syntax-check
+
+检查yaml文件中的tasks任务
+ansible-playbook 3.yml --list-task
+
+检查yaml文件中的生效主机
+ansible-playbook 3.yml --list-hosts
+
+###使用ansible-doc 了解模块使用方法
+ansible-doc yum
+
+playbook的例子
+deploy.yml的功能为web主机部署apache, 其中包含以下部署步骤：
+
+安装apache包；
+拷贝配置文件httpd，并保证拷贝文件后，apache服务会被重启；
+拷贝默认的网页文件index.html；
+启动apache服务；
+playbook deploy.yml包含下面几个关键字，每个关键字的含义：
+
+hosts：为主机的IP，或者主机组名，或者关键字all
+remote_user: 以哪个用户身份执行。
+vars： 变量
+tasks: playbook的核心，定义顺序执行的动作action。每个action调用一个ansbile module。
+
+####使用管道
+ansible all -m raw -a 'ps -ef |grep nginx'
+
+########## 安装nginx
+---
+- hosts: Test
+  vars:
+  remote_user: root
+  tasks:
+  - name: ensure nginx is at the latest version
+    yum: pkg=nginx state=latest
+
+  - name: ensure nginx is running
+    service: name=nginx state=started
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted
+###########
+
+
+
+####复制设置文件权限
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - copy:
+      src: /root/3.yml
+      dest: /root/3.yml
+      owner: root
+      group: root
+      mode: 0644
+#####
+
+#####创建一个新文件
+- file:
+    path: /etc/foo.conf
+    state: touch
+    mode: "u=rw,g=r,o=r"
+#####
+
+
+#####拷贝文件进行权限设置，文件备份，以及验证功能
+- template:
+    src: etc/ssh/sshd_config.j2
+    dest: /etc/ssh/sshd_config.j2
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/sshd -t %s
+    backup: yes
+######
+
+######删除nginx包
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - name: remove the nginx package
+    yum:
+      name: nginx
+      state: absent
+######
+
+###### 从本地文件中安装包   URL中安装包
+- name: install nginx rpm from a local file
+  yum:
+    name: /usr/local/src/nginx-release-centos-6-0.el6.ngx.noarch.rpm
+    state: present
+######
+
+######开nginx服务
+  - service:
+      name: nginx
+      state: started
+######
+
+######关nginx服务
+  - service:
+      name: nginx
+      state: stopped
+######
+
+######重起服务
+  - service:
+      name: nginx
+      state: restarted
+#######
+
+#######启动网络服务下的接口
+- service:
+    name: network
+    state: restarted
+    args: eth0
+########
+
+
+######调用脚本
+ - shell: somescript.sh >> somelog.txt
+####### 
+	
+#######执行shell脚本
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - copy:
+      src: /root/1.sh
+      dest: /root/1.sh
+      owner: root
+      group: root
+      mode: 0777
+  - command: /root/1.sh
+    args:
+      chdir: /root
+      creates: /root/test3.txt
+###/root/test3.txt 文件不存在的时候才执行1.sh	  
+###########	
+
+

@@ -1,0 +1,6 @@
+
+## -d 不退出 -it运行 -p眏射端口 -v 眏射目录 --privileged=true 给眏射目录执行权限
+docker run -d -it -p 80:80 -v /work/nginx/html/:/work/nginx/html/ --privileged=true 37d426c1e157 /bin/bash
+
+## 进入容器
+docker exec -it 565c6b0f221a /bin/bash

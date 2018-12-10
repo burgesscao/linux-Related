@@ -1,0 +1,9 @@
+
+Zabbix API
+
+
+curl -i -X POST -H 'Content-Type:application/json' -d '{"jsonrpc": "2.0","method":"user.login","params":{"user":"Admin","password":"zabbix"},"auth": null,"id":0}' http://192.168.233.155/zabbix/api_jsonrpc.php
+
+
+curl -i -X POST -H 'Content-Type:application/json' -d '{"jsonrpc": "2.0","method":"host.get","params":{"output":"extend","filter":{"host":"Linux servers"}},"auth":"d93d59d4b3893f6cac69163d77b4bf2e","id":1}' http://192.168.233.155/zabbix/api_jsonrpc.php
+

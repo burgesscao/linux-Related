@@ -1,0 +1,17 @@
+
+tar zxvf jdk-8u171-linux-x64.tar.gz
+
+
+mv jdk1.8.0_171 /work/
+
+vi /etc/profile
+#######java1.8#######
+JAVA_HOME=/work/jdk1.8.0_171
+CLASSPATH=$JAVA_HOME/lib/
+PATH=$PATH:$JAVA_HOME/bin
+export JAVA_HOME CLASSPATH PATH
+#######java1.8#######
+
+
+source /etc/profile
+java -version

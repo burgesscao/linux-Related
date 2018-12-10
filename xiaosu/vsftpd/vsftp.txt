@@ -1,0 +1,94 @@
+
+vsftp
+
+yum install -y vsftpd
+
+## 配置文件
+## /etc/vsftpd/vsftpd.conf
+## 用户控制文件，在这个文件里面的用户，默认是不可以使用vsftpd服务的
+## /etc/vsftpd/ftpusers   
+## 
+## /etc/vsftpd/user_list
+
+
+cp /etc/vsftpd/vsftpd.conf /etc/vsftpd/vsftpd_conf_bk
+vim /etc/vsftpd/vsftpd.conf
+####
+listen_port=9910             //端口号
+
+anonymous_enable=YES         //开启匿名共享
+local_enable=YES             //开启本地账户共享
+write_enable=NO              //本地账户是否可写
+## anon_upload_enable=YES          //匿名用户是否可以上传文件
+## anon_mkdir_write_enable=YES     //匿名可创建目录
+## anon_other_write_enable=YES     //匿名删除，重命名
+## chroot_local_user               //禁锢本地账户
+## anon_root=/user/local/src/user  //定义匿名用户根目录
+local_umask=022                    //文件掩码为缺省022
+dirmessage_enable=YES              //此文件保存自定义的欢迎信息，由用户自己建立
+xferlog_enable=YES
+connect_from_port_20=YES
+xferlog_std_format=YES
+listen=NO
+listen_ipv6=YES
+
+pam_service_name=vsftpd
+userlist_enable=YES
+tcp_wrappers=YES
+
+anon_root=/usr/local/src
+####
+
+
+## 默认匿名用户就是可以访问的 ，只是不能上传
+ftp://192.168.233.179:9910/
+
+
+
+
+
+cat /etc/vsftpd/vsftpd.conf
+#######
+listen_port=9910
+
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_umask=022
+dirmessage_enable=YES
+xferlog_enable=YES
+connect_from_port_20=YES
+xferlog_std_format=YES
+listen=NO
+listen_ipv6=YES
+
+pam_service_name=vsftpd
+userlist_enable=YES
+tcp_wrappers=YES
+
+guest_enable=YES
+guest_username=burgess
+virtual_use_local_privs=YES
+user_config_dir=/etc/vsftpd/vuserconf
+#######
+
+mkdri /etc/vsftpd/vuserconf
+chown -R burgess:burgess /usr/local/src/caoyh
+touch /etc/vsftpd/vuserconf/caoyh
+touch /etc/vsftpd/vuserconf_passwd.txt
+
+db_load -T -t hash -f /etc/vsftpd/vuserconf_passwd.txt /etc/vsftpd/vuserconf_passwd.db
+
+
+cat /etc/vsftpd/vuserconf/caoyh
+###
+local_root=/usr/local/src/caoyh
+write_enable=YES
+anon_umask=022
+anon_world_readable_only=NO
+anon_upload_enable=YES
+anon_mkdir_write_enable=YES
+anon_other_write_enable=YES
+### 
+
+

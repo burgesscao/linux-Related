@@ -1,0 +1,50 @@
+
+Jenkins
+
+方法一:
+https://pkg.jenkins.io/redhat-stable/
+
+yum install -y lrzsz vim wget 
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+yum install jenkins -y
+
+yum install java-1.8.0-openjdk -y
+
+
+## 启动
+service jenkins start
+
+## 密码
+cat /var/lib/jenkins/secrets/initialAdminPassword
+
+方法二:
+https://jenkins.io/download/
+下载war包
+放进tomcat/webapps目录下
+java -jar jenkins.war　　
+
+
+http://localhost:8080/jenkins
+
+
+Tomcat 
+
+https://tomcat.apache.org/download-90.cgi
+
+wget http://mirrors.shu.edu.cn/apache/tomcat/tomcat-9/v9.0.8/bin/apache-tomcat-9.0.8.tar.gz
+
+tar zxvf apache-tomcat-9.0.8.tar.gz
+mkdir /tomcat 
+mv apache-tomcat-9.0.8 /tomcat/
+cd /tomcat/
+./apache-tomcat-9.0.8/bin/startup.sh 
+
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --reload
+
+
+
+
+

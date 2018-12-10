@@ -1,0 +1,86 @@
+
+
+
+
+
+tar zxvf haproxy-1.8.14.tar.gz
+cd haproxy-1.8.14
+uname -r
+make TARGET=linux310 ARCH=x86_64 PREFIX=/work/haproxy
+make install PREFIX=/work/haproxy
+mkdir /work/haproxy/conf
+
+vim /etc/sysctl.conf
+### 开启转发 ###
+net.ipv4.ip_forward = 1
+### 开启转发 ###
+
+## 重新加载
+sysctl -p
+
+
+vim /work/haproxy/conf/haproxy.cfg 
+###########
+global 
+    log 127.0.0.1 local2
+    pidfile /var/run/haproxy.pid
+    maxconn 4000 
+    user root
+    group root
+    daemon 
+
+
+defaults
+    mode http 
+    log global 
+    option dontlognull 
+    option httpclose 
+    option httplog 
+    option redispatch 
+    timeout connect 10s 
+    timeout client 10s 
+    timeout server 10s 
+    maxconn 60000 
+    retries 3
+
+
+listen admin_stats
+        bind 0.0.0.0:1080
+        mode http
+        option httplog
+        maxconn 10
+        stats refresh 30s
+        stats uri /stats
+        stats realm XingCloud\ Haproxy
+        stats auth admin:admin
+        stats auth  Frank:Frank
+        stats hide-version
+        stats  admin if TRUE
+
+listen webcluster
+    bind 0.0.0.0:2080     
+    mode http
+    option httpchk GET /index.html
+    log global
+    maxconn 3000
+    balance roundrobin
+    server web01 192.168.233.132:80 check inter 2000 fall 3
+    server web02 192.168.233.181:80 check inter 2000 fall 3
+###########	
+
+## 启动
+/work/haproxy/sbin/haproxy -f /work/haproxy/conf/haproxy.cfg
+
+## 
+192.168.233.132:1080/stats
+
+
+## 测试
+[root@localhost conf]# curl 192.168.233.132:2080
+Burgess 181
+[root@localhost conf]# curl 192.168.233.132:2080
+Caoyh 132 
+[root@localhost conf]# curl 192.168.233.132:2080
+Burgess 181
+
+

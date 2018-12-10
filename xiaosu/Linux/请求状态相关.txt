@@ -1,0 +1,160 @@
+
+netstat
+
+netstat --help
+所有参数
+-r， - 路由显示路由表
+-I， - interface = <Iface>显示<Iface>的接口表
+-i， - interfaces显示接口表
+-g， - groupss显示多播组成员资格
+-s， - 统计显示网络统计信息（如SNMP）
+-M， - masquerade显示伪装连接
+
+-v， - verbose是详细的
+-n， - 数字不解析名称
+--numeric-hosts不解析主机名
+--numeric-ports不解析端口名称
+--numeric-users不解析用户名
+-N， - 符号解析硬件名称
+-e， - 扩展显示其他/更多信息
+-p，--programs显示套接字的PID /程序名称
+-c， - 连续不断上市
+
+-l， - 显示监听服务器套接字
+-a， - all，--listening显示所有套接字（默认值：已连接）
+-o， - 用户显示计时器
+-F， - fib display Forwarding Information Base（默认）
+-C， - cache显示路由缓存而不是FIB
+-T， - notrim停止修剪长地址
+-Z， - context显示套接字的SELinux安全上下文
+
+常见参数
+-a (all)显示所有选项，默认不显示LISTEN相关
+-t (tcp)仅显示tcp相关选项
+-u (udp)仅显示udp相关选项
+-n 拒绝显示别名，能显示数字的全部转化成数字。
+-l 仅列出有在 Listen (监听) 的服務状态
+-p 显示建立相关链接的程序名
+-r 显示路由信息，路由表
+-e 显示扩展信息，例如uid等
+-s 按各个协议进行统计
+-c 每隔一个固定时间，执行该netstat命令。
+
+提示：LISTEN和LISTENING的状态只有用-a或者-l才能看到
+
+## 列出所有端口 
+netstat -a
+
+## 列出所有 tcp 端口 
+netstat -at
+
+## 列出所有 udp 端口 
+netstat -au
+
+## 只显示监听端口 
+netstat -l
+
+## 只列出所有监听 tcp 端口 
+netstat -lt
+
+## 只列出所有监听 udp 端口 
+netstat -lu
+
+## 只列出所有监听 UNIX 端口 
+netstat -lx
+
+## 显示所有端口的统计信息 
+netstat -s
+
+## 显示 TCP 或 UDP 端口的统计信息
+netstat -st 
+netstat -su
+
+## 输出中显示 PID 和进程名称 
+netstat -p
+
+## 输出中不显示主机，端口和用户名
+netstat -an
+
+## 输出中不显示主机，端口和用户名其中之一
+netsat -a --numeric-ports
+netsat -a --numeric-hosts
+netsat -a --numeric-users
+
+## 显示核心路由信息 
+netstat -r
+
+## 找出程序运行的端口
+netstat -ap | grep ssh
+
+
+## 查看并发请求数及其TCP连接状态：
+netstat -n | awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
+
+TCP连接状态详解 
+    LISTEN： 侦听来自远方的TCP端口的连接请求
+    SYN-SENT： 再发送连接请求后等待匹配的连接请求
+    SYN-RECEIVED：再收到和发送一个连接请求后等待对方对连接请求的确认
+    ESTABLISHED： 代表一个打开的连接
+    FIN-WAIT-1： 等待远程TCP连接中断请求，或先前的连接中断请求的确认
+    FIN-WAIT-2： 从远程TCP等待连接中断请求
+    CLOSE-WAIT： 等待从本地用户发来的连接中断请求
+    CLOSING： 等待远程TCP对连接中断的确认
+    LAST-ACK： 等待原来的发向远程TCP的连接中断请求的确认
+    TIME-WAIT： 等待足够的时间以确保远程TCP接收到连接中断请求的确认
+    CLOSED： 没有任何连接状态
+    SYN_RECV表示正在等待处理的请求数；
+    ESTABLISHED表示正常数据传输状态；
+    TIME_WAIT表示处理完毕，等待超时结束的请求数
+	
+如发现系统存在大量TIME_WAIT状态的连接，通过调整内核参数解决
+    net.ipv4.tcp_syncookies = 1   ## 表示开启SYN cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYN攻击，默认为0，表示关闭；
+    net.ipv4.tcp_tw_reuse = 1     ## 表示开启重用。允许将TIME-WAIT sockets重新用于新的TCP连接，默认为0，表示关闭；
+    net.ipv4.tcp_tw_recycle = 1   ## 表示开启TCP连接中TIME-WAIT sockets的快速回收，默认为0，表示关闭。
+    net.ipv4.tcp_fin_timeout = 30 ## 修改系統默认的TIMEOUT时间	
+## 让参数生效
+/sbin/sysctl -p 
+
+
+
+
+
+另外很多人会用到TCP SYN Flood透过网路底层对服务器Server进行攻击的，我可以用Iptables防范下：
+防止同步包洪水（Sync Flood）
+1.iptables -A FORWARD -p tcp --syn -m limit --limit 1/s -j ACCEPT
+
+也有人写作
+1.iptables -A INPUT -p tcp --syn -m limit --limit 1/s -j ACCEPT
+--limit 1/s 限制syn并发数每秒1次，可以根据自己的需要修改
+防止各种端口扫描
+
+1.iptables -A FORWARD -p tcp --tcp-flags SYN,ACK,FIN,RST RST -m limit --limit 1/s -j ACCEPT
+
+Ping洪水攻击（Ping of Death）
+
+1.iptables -A FORWARD -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+
+ 
+同时，在初始化系统过程中，可以对服务器的数据连接做设置，下面简单的设置下，如果有关于这方面的设置，
+
+vim /etc/sysctl.conf
+net.ipv4.tcp_tw_reuse = 1
+该文件表示是否允许重新应用处于TIME-WAIT状态的socket用于新的TCP连接。
+net.ipv4.tcp_tw_recycle = 1
+recyse是加速TIME-WAIT sockets回收
+对tcp_tw_reuse和tcp_tw_recycle的修改，可能会出现.warning, got duplicate tcp line warning, got BOGUS tcp line.上面这二个参数指的是存在这两个完全一样的TCP连接，这会发生在一个连接被迅速的断开并且重新连接的情况，而且使用的端口和地址相同。但基本 上这样的事情不会发生，无论如何，使能上述设置会增加重现机会。这个提示不会有人和危害，而且也不会降低系统性能，目前正在进行工作
+net.ipv4.tcp_syncookies = 1
+表示开启SYN Cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYN攻击，默认为0，表示关闭；
+net.ipv4.tcp_synack_retries = 1
+net.ipv4.tcp_keepalive_time = 1200
+表示当keepalive起用的时候,TCP发送keepalive消息的频度。缺省是2小时
+net.ipv4.tcp_fin_timeout = 30
+fin_wait1状态是在发起端主动要求关闭tcp连接，并且主动发送fin以后，等待接收端回复ack时候的状态。对于本端断开的socket连接，TCP保持在FIN-WAIT-2状态的时间。对方可能会断开连接或一直不结束连接或不可预料的进程死亡。
+net.ipv4.ip_local_port_range = 1024 65000
+net.ipv4.tcp_max_syn_backlog = 8192
+该文件指定了，在接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
+net.ipv4.tcp_max_tw_buckets = 5000
+
+使设置生效
+
+sysctl -p 

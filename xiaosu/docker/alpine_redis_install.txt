@@ -1,0 +1,62 @@
+
+Redis
+
+
+
+##时区
+apk update
+apk add tzdata
+cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+apk del tzdata
+
+apk add redis
+
+## tar zxvf redis-4.0.11.tar.gz
+## cd redis-4.0.11
+## 
+## make PREFIX=/work/redis install
+
+
+
+
+
+## docker 网络
+docker network create --subnet=172.22.0.0/16 mynetwork
+docker network ls
+docker run -i -d --net mynetwork --ip 172.18.0.18 alpine
+
+
+
+
+
+## docker 启动服务
+/usr/bin/cp -a danginx.service /lib/systemd/system
+
+systemctl enable danginx
+systemctl daemon-reload
+
+systemctl start danginx
+systemctl stop danginx
+
+cat /lib/systemd/system/danginx.service 
+######
+[Unit]
+Description=nginx 1.14.0
+Requires=docker.service alpine.nginx
+After=nginx
+
+[Service]
+Type=oneshot
+
+ExecStart=/usr/bin/docker run -it --name %N -d -v /work/:/work/ -p 7999:80  e1c9ca718da4
+## ExecStartPost=-/work/bin/docker-net %N ip lan flush
+## ExecStartPost=-/work/bin/docker-net %N ip lan 192.168.199.11/24
+
+
+ExecStop=-/usr/bin/docker stop -t 2 %N
+ExecStop=-/usr/bin/docker rm -f %N
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+######

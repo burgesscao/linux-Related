@@ -1,0 +1,351 @@
+Git升级为Gitolite+Gitweb+Nginx
+应用实例：公司通过控制git权限，避免git代码被一些不相关的人员拷走代码
+我在git服务器上直接以root作为管理员
+
+yum install -y git 
+ssh-keygen -t rsa 
+cp /root/.ssh/id_rsa.pub /tmp/git_admin.pub 
+useradd git 
+su - git 
+git clone https://github.com/sitaramc/gitolite 
+mkdir bin #执行下面的命令会生成gitolite，是一个软连接 
+gitolite/install -ln 
+cd bin 
+[git@learning ~] gitolite setup -pk /tmp/git_admin.pub 
+Initialized empty Git repository in /home/git/repositories/gitolite-admin.git/ 
+Initialized empty Git repository in /home/git/repositories/testing.git/ 
+[git@learning ~] ls -a /home/git 
+bin gitolite projects.list repositories
+
+git生成哪些东西
+[git@learning ~] ls /home/git/repositories/ #生成了两个仓库 
+gitolite-admin.git testing.git 
+[git@learning ~]$ cat /home/git/.ssh/authorized_keys #通过gitolite setup -pk /tmp/git_admin.pub生成的公钥对，管理员不用密码直接clone
+
+# gitolite start
+command="/home/git/gitolite/src/gitolite-shell git_admin",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhjBz9NQ3xGU3i6U7IBg+KMwIQcOfo/eyzq4a1JMAKCVGuLyMMMnYHwWkxwBYXI8eK9zLp3pSU12qDGpxfvjTj9oj6E/6Q2dyzx3vA1rXwejqMc5Hyg/ktrAM5meJn/oBvC9qAug2ZAWHsDhX6HuTAIspCH2NlKOA5YYnHxnSBJ+zSTI+q9IFfer+7sOfefZpXq/wi+uu+v6BUVmjXUXyqIwIWgt1HHtD4ohcN+RyH root@test
+# gitolite end
+cat /home/git/projects.list #git仓库列表 
+testing.git 
+exit #退出git用户 
+git clone ssh://git@192.168.25.110:2222/gitolite-admin #管理克隆管理仓库，只管理才能克隆 
+[root@learning 0413]# cd gitolite-admin/ #管理就是通过这个两个目录管理用户，添加git在conf，添加公钥在keydir 
+[root@learning gitolite-admin]# ls 
+conf keydir 
+[root@learning gitolite-admin]# cat conf/gitolite.conf #repo表示一个git仓库RW表示权限，添加git仓库可以直接复制粘贴
+
+repo gitolite-admin
+    RW+    =  git_admin
+repo testing
+    RW+    =  @all
+[root@learning gitolite-admin]# ls keydir/ #公钥，添加完仓库或公钥后git add gitolite.conf，git commit -m "conf"，git push就推送到git服务器，它会自动生成仓库和公钥 
+git_admin.pub
+
+生成一个仓库，并把原来的git仓库迁移过来
+vim gitolite.conf
+
+repo gitolite-admin
+    RW+    =  git_admin
+repo testing
+    RW+    =  @all
+repo test
+    RW+    =  @all
+[root@learning conf]# git add gitolite.conf 
+[root@learning conf]# git commit -m "conf" 
+[root@learning conf]# git push 
+su - git 
+cp test.git repositories/test.git #迁移的时候，不要删除原来的，直接覆盖 
+添加公钥也是一样，但是公钥的名字，最好以用户取名
+
+#
+通过http访问git
+2、安装、配置 Nginx ( 使其支持 CGI )
+
+shell > cd /usr/local/src 
+shell > git clone https://github.com/lighttpd/spawn-fcgi.git 
+shell > yum install -y autoconf automake libtool 
+shell > cd spawn-fcgi && ./autogen.sh && ./configure && make && make install 
+shell > yum -y install fcgi-devel 
+shell > cd /usr/local/src 
+shell > git clone https://github.com/gnosek/fcgiwrap.git 
+shell > cd fcgiwrap && autoreconf -i && ./configure && make && make install 
+shell > vim /etc/init.d/fcgiwrap # 配置启动脚本
+
+#! /bin/bash
+### BEGIN INIT INFO
+# Provides:          fcgiwrap
+# Required-Start:    $remote_fs
+# Required-Stop:    $remote_fs
+# Should-Start:
+# Should-Stop:
+# Default-Start:    2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: FastCGI wrapper
+# Description:      Simple server for running CGI applications over FastCGI
+### END INIT INFO
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+SPAWN_FCGI="/usr/local/bin/spawn-fcgi"
+DAEMON="/usr/local/sbin/fcgiwrap"
+NAME="fcgiwrap"
+PIDFILE="/var/run/$NAME.pid"
+FCGI_SOCKET="/var/run/$NAME.socket"
+FCGI_USER="www-data"
+FCGI_GROUP="www-data"
+FORK_NUM=5
+SCRIPTNAME=/etc/init.d/$NAME
+case "$1" in
+    start)
+        echo -n "Starting $NAME... "
+        PID=`pidof $NAME`
+        if [ ! -z "$PID" ]; then
+            echo " $NAME already running"
+            exit 1
+        fi
+        $SPAWN_FCGI -u $FCGI_USER -g $FCGI_GROUP -s $FCGI_SOCKET -P $PIDFILE -F $FORK_NUM -f $DAEMON
+        if [ "$?" != 0 ]; then
+            echo " failed"
+            exit 1
+        else
+            echo " done"
+        fi
+    ;;
+    stop)
+        echo -n "Stoping $NAME... "
+        PID=`pidof $NAME`
+        if [ ! -z "$PID" ]; then
+            kill `pidof $NAME`
+            if [ "$?" != 0 ]; then
+                echo " failed. re-quit"
+                exit 1
+            else
+                rm -f $pid
+                echo " done"
+            fi
+        else
+            echo "$NAME is not running."
+            exit 1
+        fi
+    ;;
+    status)
+        PID=`pidof $NAME`
+        if [ ! -z "$PID" ]; then
+            echo "$NAME (pid $PID) is running..."
+        else
+            echo "$NAME is stopped"
+            exit 0
+        fi
+    ;;
+    restart)
+        $SCRIPTNAME stop
+        sleep 1
+        $SCRIPTNAME start
+    ;;
+    *)
+        echo "Usage: $SCRIPTNAME {start|stop|restart|status}"
+        exit 1
+    ;;
+esac
+注意 spawn-fcgi 跟 fcgiwrap 脚本路径及 FCGI_GROUP 跟 FCGI_GROUP 
+脚本启动了 5 个 cgi 进程，按需调整
+
+shell > chmod a+x /etc/init.d/fcgiwrap 
+shell > chkconfig --level 35 fcgiwrap on 
+shell > /etc/init.d/fcgiwrap start 
+shell > sh auto.sh install nginx # 安装 nginx
+
+#!/bin/bash
+install_nginx(){
+  yum -y install gcc gcc-c++ wget make pcre-devel zlib-devel openssl-devel
+  id www-data > /dev/null 2>&1 || useradd -r -s /sbin/nologin www-data
+  cd /usr/local/src; wget -qc http://nginx.org/download/nginx-1.10.2.tar.gz || exit 9
+  tar zxf nginx-1.10.2.tar.gz; cd nginx-1.10.2
+  ./configure --prefix=/usr/local/nginx-1.10.2 \
+              --with-http_dav_module \
+              --with-http_ssl_module \
+              --with-http_realip_module \
+              --with-http_gzip_static_module \
+              --with-http_stub_status_module \
+              --with-http_degradation_module && make && make install
+  mkdir /usr/local/nginx-1.10.2/conf/vhost; mkdir -p /data/logs/nginx
+  echo "/usr/local/nginx-1.10.2/sbin/nginx" >> /etc/rc.local
+}
+[ $# -lt 2 ] && exit 9
+if [ $1 == 'install' ];then
+  case $2 in
+    nginx)
+      install_nginx ;;
+    *)
+      echo 'NULL' ;;
+  esac
+fi
+--with-http_dav_module 不添加该模块无法 git push，请查找 Nginx WebDAV 模块
+
+shell > vim /usr/local/nginx/conf/vhost/git.server.conf
+
+server {
+    listen      80;
+    server_name git.server.com;
+    client_max_body_size 100m;
+    auth_basic "Git User Authentication";
+    auth_basic_user_file /usr/local/nginx/conf/pass.db;
+    location ~ ^.*\.git/objects/([0-9a-f]+/[0-9a-f]+|pack/pack-[0-9a-f]+.(pack|idx))$ {
+        root /home/git/repositories;
+    }    
+    location ~ /.*\.git/(HEAD|info/refs|objects/info/.*|git-(upload|receive)-pack)$ {
+        root         /home/git/repositories;
+        fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+        fastcgi_connect_timeout 24h;
+        fastcgi_read_timeout 24h;
+        fastcgi_send_timeout 24h;
+        fastcgi_param SCRIPT_FILENAME  /usr/libexec/git-core/git-http-backend;
+        fastcgi_param PATH_INFO        $uri;
+        fastcgi_param GIT_HTTP_EXPORT_ALL "";
+        fastcgi_param GIT_PROJECT_ROOT  /home/git/repositories;
+        fastcgi_param REMOTE_USER $remote_user;
+        include fastcgi_params;
+    }
+}
+自己按需修改 nginx.conf，user www-data www-data; 不要忘记加入 include vhost/*.conf; 
+注意 认证文件 pass.db 路径 
+注意 git-http-backend 路径，可以find / -name git-http-backend 
+第一个 location 用于静态文件直接读取 
+第二个 location 用于将指定动作转给 cgi 执行 
+根目录指向 git 仓库目录
+
+shell > /usr/local/sbin/nginx 
+shell > yum -y install httpd-tools # 安装 htpasswd 命令 
+shell > cd /usr/local/nginx-1.10.2/conf 
+shell > htpasswd -c pass.db wang # 添加用户时执行 htpasswd pass.db use
+
+3、客户端 clone
+
+shell > git config --global color.ui true 
+shell > git config --global user.name 'tompson' 
+shell > git config --global user.email 'tompson@123kang.com'
+
+初始化客户端
+
+shell > git clone http://git.server.com/sample.git # 输入用户名、密码即可 
+正克隆到 'sample'… 
+Username for 'http://git.server.com': wang 
+Password for 'http://wang@git.server.com': 
+warning: 您似乎克隆了一个空仓库。
+
+四、通过Gitweb访问
+
+shell > yum install -y gitweb highlight 
+shell > ls /var/www/git # Gitweb 路径，每个环境，可以find / -name gitweb.cgi 
+gitweb.cgi static 
+shell > vim /etc/gitweb.conf # 生成配置文件
+
+# path to git projects (<project>.git)
+$projectroot = "/home/git/repositories";
+# directory to use for temp files
+$git_temp = "/tmp";
+# target of the home link on top of all pages
+$home_link = $my_uri || "/";
+# html text to include at home page
+$home_text = "indextext.html";
+# file with project list; by default, simply scan the projectroot dir.
+$projects_list = "/home/git/projects.list";
+# javascript code for gitweb
+$javascript = "static/gitweb.js";
+# stylesheet to use
+# $stylesheet = "static/gitweb.css";
+# logo to use
+$logo = "static/git-logo.png";
+# the 'favicon'
+$favicon = "static/git-favicon.png";
+git权限配置
+    ②Gitweb额外配置
+为了准备Gitweb访问，还需要一些额外的配置。主要是处理文件系统的权限和repo的权限问题。
+首先要修改/home/git/.gitolite.rc中的UMASK，将0007修改为0027。同时执行：
+chmod 750 /home/git
+usermod -a -G git nobody #nobody是我运行服务器的用户，自行修改
+chmod g+r /home/git/projects.list
+chmod -R g+rx /home/git/repositories
+将Web服务器的执行用户添加到git组，并保证文件系统权限对现有文件也起效。 
+另外要注意的一点是Gitweb通过projects.list读取并决定哪些repo能够显示（确切说是显示在首页，后面Gitweb配置部分会提到），在Gitolite中，需要对特定repo设置权限 R = gitweb 才能使该repo被加入到projects.list当中。
+
+添加Nginx配置文件
+
+[root@110 vhosts]# cat git.server.conf
+server {
+    listen      80;
+    server_name git.server.com;
+    client_max_body_size 100m;
+    auth_basic "Git User Authentication";
+    auth_basic_user_file /usr/local/nginx-1.10.2/conf/pass.db;
+    location ~ ^.*\.git/objects/([0-9a-f]+/[0-9a-f]+|pack/pack-[0-9a-f]+.(pack|idx))$ {
+        root /var/www/git;
+    }    
+    location ~ /.*\.git/(HEAD|info/refs|objects/info/.*|git-(upload|receive)-pack)$ {
+        root          /var/www/git;
+        fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+#        fastcgi_pass unix:/tmp/php-fcgi.sock;
+        fastcgi_connect_timeout 24h;
+        fastcgi_read_timeout 24h;
+        fastcgi_send_timeout 24h;
+        fastcgi_param SCRIPT_FILENAME  /usr/libexec/git-core/git-http-backend;
+        fastcgi_param PATH_INFO        $uri;
+        fastcgi_param GIT_HTTP_EXPORT_ALL "";
+        fastcgi_param GIT_PROJECT_ROOT  /var/www/git;
+        fastcgi_param REMOTE_USER $remote_user;
+        include fastcgi_params;
+    }
+    try_files $uri @gitweb;
+    location @gitweb {
+        fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+#        fastcgi_pass unix:/tmp/php-fcgi.sock;
+        fastcgi_param GITWEB_CONFIG    /etc/gitweb.conf;
+        fastcgi_param SCRIPT_FILENAME  /var/www/git/gitweb.cgi;
+        fastcgi_param PATH_INFO        $uri;
+        include fastcgi_params;
+    }
+}
+/usr/local/nginx-1.10.2/sbin/nginx -t 
+/usr/local/nginx-1.10.2/sbin/nginx -s reload 
+/etc/init.d/fcgiwrap restart #迁移的时候fcgiwrap也要重启，不然出现404 - No projects found 
+五、Gitweb-theme 样式
+
+如果觉得 gitweb 默认样式不好看，可以拿该样式替换
+
+shell > cd /usr/local/src 
+shell > git clone https://github.com/kogakure/gitweb-theme.git 
+shell > cd gitweb-theme 
+shell > ./setup -vi -t /var/www/git --install # -t 指定 gitweb 根目录，一路 y 即可 
+这时刷新浏览器，就会发现界面的变化
+
+
+补充： 
+如果你之前是使用git，现在升级为gitolite，先测试好，因为git和gitolite不同时clone，就是你生成gitolite后，你的服务器需要删除了之前的公钥，git和gitolite的公钥模式不一样
+
+要注意的一点是Gitweb通过projects.list读取并决定哪些repo能够显示（确切说是显示在首页，后面Gitweb配置部分会提到），在Gitolite中，需要对特定repo设置权限 R = gitweb 才能使该repo被加入到projects.list当中。
+
+迁移Git到Gitolite
+备份/home/git/.ssh/authorized_keys
+
+错误一：git clone需要输入密码配置错误的原因有： 
+1、/home/git权限750了，要给700；每次执行gitolite setup -pk /tmp/git_admin.pub 的时候/home/git/.gitolite隐藏的文件没有删 
+2、该用户没有上传秘钥对到gitolite，
+
+错误二： 
+fatal: Could not read from remote repository. 
+该用户为添加到repo对应的权限
+
+错误三： 
+FATAL: R any ask 10_09_tompson DENIED by fallthru 
+(or you mis-spelled the reponame) 
+fatal: Could not read from remote repository.
+
+解决方法： 
+ssh -p 22 git@192.168.25.110 #先看看连接的权限，然后在对应的repo的找到 
+PTY allocation request failed on channel 0 
+hello 10_09_tompson, this is git@openvpn running gitolite3 v3.6.7-19-g2cfc81f on git 1.8.3.1
+
+R W testing 
+Connection to 192.168.25.110 closed.
+
+错误四： 
+有些git在gitweb无法显示出来 
+解决方法：查看git目录权限是否给了chmod -R g+rx /home/git/repositories

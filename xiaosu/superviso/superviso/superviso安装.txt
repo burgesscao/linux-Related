@@ -1,0 +1,222 @@
+
+supervisor
+
+https://pypi.org/project/supervisor/
+https://pypi.org/project/supervisor/#files
+
+安装
+方法一：
+wget https://files.pythonhosted.org/packages/44/60/698e54b4a4a9b956b2d709b4b7b676119c833d811d53ee2500f1b5e96dc3/supervisor-3.3.4.tar.gz
+tar zxvf supervisor-3.3.4.tar.gz
+cd supervisor-3.3.4
+python setup.py install
+## python2.7 setup.py install 本地python版本为python3以上
+
+
+方法二：
+yum install python-setuptools
+easy_install supervisor
+
+
+方法三：
+yum install -y epel-release
+yum install -y supervisor
+
+
+
+#测试是否安装成功
+echo_supervisord_conf
+
+
+#创建配置文件
+echo_supervisord_conf > /etc/supervisord.conf
+
+启动
+supervisord -c /etc/supervisord.conf
+
+查看 supervisord 是否在运行：
+ps aux | grep supervisord
+
+配置
+vim /etc/supervisord.conf
+###在配置文件底部，配置include
+[include]
+files=/etc/supervisor/*.conf
+###在配置文件底部，配置include
+
+
+### 用supervisor管理进程，配置如下：
+cat /etc/supervisor/WechatImport.ini
+####
+[program:WechatImport]
+directory = /www/html ;程序的启动目录
+command = /usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=WechatImport --env=production 
+autostart = true     ; 在 supervisord 启动的时候也自动启动
+startsecs = 5        ; 启动 5 秒后没有异常退出，就当作已经正常启动了
+autorestart = true   ; 程序异常退出后自动重启
+startretries = 10     ; 启动失败自动重试次数，默认是 3
+user = www          ; 用哪个用户启动
+redirect_stderr = true  ; 把 stderr 重定向到 stdout，默认 false
+stdout_logfile_maxbytes = 20MB  ; stdout 日志文件大小，默认 50MB
+stdout_logfile_backups = 20     ; stdout 日志文件备份数
+; stdout 日志文件，需要注意当指定目录不存在时无法正常启动，所以u.log
+stdout_logfile = /usr/local/supervisor/log/%(program_name)s.log
+########
+
+
+### 更改了supervisor配置文件，需要重启,运行以下指令：
+supervisorctl reload
+
+
+
+#### supervisorctl的用法
+supervisord              启动supervisor
+supervisorctl reload     修改完配置文件后重新启动supervisor
+supervisorctl status     查看supervisor监管的进程状态
+supervisorctl start      进程名 ：启动XXX进程
+supervisorctl stop       进程名 ：停止XXX进程
+supervisorctl stop all   停止全部进程，注：start、restart、stop都不会载入最新的配置文件。
+supervisorctl update     根据最新的配置文件，启动新配置或有改动的进程，配置没有改动的进程不会受影响而重启
+
+
+
+
+######用浏览器来管理
+vim /etc/supervisord.conf
+
+## 配置 inet_http_server
+[inet_http_server]       
+port=127.0.0.1:9001     ; 服务器ip
+username=xxx        ;自定义
+password=xxx        ;自定义
+
+
+若报错：insserv: warning: script 'service' missing LSB tags and overrides，请执行:
+sudo yum remove insserv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+rpm -Uvh http://mirrors.yun-idc.com/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+
+yum install erlang
+
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.6/rabbitmq-server-3.6.6-1.el7.noarch.rpm
+um install rabbitmq-server-3.6.6-1.el7.noarch.rpm
+
+
+cd /var/log/rabbitmq/
+
+tail -f rabbit\@localhost
+
+## 停止启动
+service rabbitmq-server stop
+service rabbitmq-server start
+
+## 查看启动情况
+service rabbitmq-server status
+
+ss -nltu |grep 5672
+
+## 允许端口5672
+firewall-cmd --zone=public --add-port=5672/tcp --permanent
+firewall-cmd --reload 
+
+## 开启网页版 并允许端口
+rabbitmq-plugins enable rabbitmq_management
+firewall-cmd --zone=public --add-port=15672/tcp --permanent
+firewall-cmd --reload
+
+
+cd /var/log/rabbitmq/
+
+tail -f rabbit\@localhost
+
+## 使用Pika Python客户端
+http://www.rabbitmq.com/tutorials/tutorial-three-python.html
+## 使用Pika Python客户端
+
+## 安装pip 并安装pika消息接入与发送
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py
+pip list --outdated
+pip install pika
+
+
+
+cd /etc/rabbitmq
+vi send.py
+#########send.py 发送
+#!/usr/bin/env python
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+channel.basic_publish(exchange='',
+                      routing_key='cyh',
+                      body='Hello Burgess')
+print(" [x] Sent 'Hello Burgess'")
+connection.close()
+#########send.py
+
+vi receive.py
+#########receive.py 接收
+#!/usr/bin/env python
+
+import pika
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+
+channel.queue_declare(queue='cyh')
+
+def callback(ch, method, properties, body):
+    print(" [x] Received %r" % body)
+
+channel.basic_consume(callback,
+                      queue='cyh',
+                      no_ack=True)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
+#########receive.py
+
+
+

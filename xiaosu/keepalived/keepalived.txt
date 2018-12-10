@@ -1,0 +1,21 @@
+
+
+tar zxvf keepalived-2.0.8.tar.gz
+cd keepalived-2.0.8
+
+
+yum install -y gcc gcc-c++ openssl-devel
+
+./configure --prefix=/work/keepalived
+make && make install
+
+
+cp /root/keepalived-2.0.8/keepalived/etc/init.d/keepalived /etc/init.d/
+cp /work/keepalived/etc/keepalived/keepalived.conf /etc/keepalived/
+cp keepalived/etc/sysconfig/keepalived /etc/sysconfig/
+
+
+service keepalived start
+
+
+

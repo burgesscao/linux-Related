@@ -1,0 +1,13 @@
+
+脚本名             用于
+CNginx.sh         检测nginx并重启
+Cphp.sh           检查php定时脚本是否执行，并执行
+Cweb.sh           检查站点是否返回200 不是就重启Nginx、php
+Gitgoback.sh      回滚代码，先备份后回滚
+Gitreturn.sh      回滚代码
+Mysql.sh          mysql查询脚本
+Cphperror.sh      php脚本执行错误时发送手机短信给老壁
+Credis.sh         检查并启动Redis
+Gitpull.sh        进行git pull拉代码 先进行备份后更新
+Mysqlbk.sh        Mysql备份
+nginxdata.sh      日志切割

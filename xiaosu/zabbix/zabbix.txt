@@ -1,0 +1,107 @@
+zabbix
+
+yum install gcc gcc-c++ autoconf automake zlib zlib-devel openssl openssl-devel pcre pcre-devel -y
+yum -y install net-snmp-devel libxml2-devel libcurl-deve libevent libevent-devel libcurl curl-devel mysql-devel
+
+
+./configure --prefix=/work/zabbix --enable-server --enable-agent --with-mysql --enable-ipv6 --with-net-snmp --with-libcurl --with-libxml2
+
+
+
+
+
+source /root/zabbix-3.4.9/database/mysql/schema.sql;
+source /root/zabbix-3.4.9/database/mysql/images.sql;
+source /root/zabbix-3.4.9/database/mysql/data.sql;
+
+
+
+##vim /work/php/lib/php.ini 
+post_max_size = 16M
+max_execution_time = 300
+max_input_time = 300
+date.timezone = Asia/Shanghai
+always_populate_raw_post_data = -1
+###
+
+### PHP参数报错
+PHP LDAP     off      Waming
+
+### 查看模块是否安装
+find / -name ldap.so
+
+### 在安装目录直接修改增加
+vim /work/php/lib/php.ini
+##
+extension=ldap.so 
+##
+
+
+### 不在安装目录 安装步骤####
+cd /root
+tar zxvf php-5.6.36.tar.gz
+cd php-5.6.36/ext/ldap/
+yum install openldap openldap-devel  -y
+/work/php/bin/phpize
+cp -frp /usr/lib64/libldap* /usr/lib/
+./configure  --with-php-config=/work/php/bin/php-config  --with-ldap
+make && make install
+
+
+vim /work/php/lib/php.ini
+##
+extension=ldap.so 
+##
+### 不在安装目录 安装步骤####
+
+
+### PHP参数报错
+PHP option "always_populate_raw_post_data"	on	off	Fail
+
+### 查看模块是否在安装目录
+find / -name gd.so
+
+### 在安装目录直接修改增加
+vim /work/php/lib/php.ini
+##
+extension=gd.so 
+##
+
+
+### 不在安装目录 安装步骤####
+cd /root
+tar zxvf php-5.6.36.tar.gz
+cd php-5.6.36/ext/gd/
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config --with-jpeg-dir=/work/jpeg/ --with-freetype-dir=/work/freetype/
+make && make install
+
+#可能出现以上错误configure: error: jpeglib.h not found. fatal error: freetype/config/ftheader.h: No such file or directory
+### 安装freetype
+cd /root
+wget https://download.savannah.gnu.org/releases/freetype/freetype-2.9.tar.gz --no-check-certificate
+tar zxvf freetype-2.9.tar.gz
+cd freetype-2.9
+./configure --prefix=/work/freetype
+make && make install
+### 安装jpegsrc
+cd /root
+wget http://www.ijg.org/files/jpegsrc.v9c.tar.gz
+tar zxvf jpegsrc.v9c.tar.gz
+cd jpeg-9c
+./configure --prefix=/work/jpeg --enable-shared --enable-static
+make && make install
+
+cd /root
+#tar zxvf php-5.6.36.tar.gz
+cd /root/php-5.6.36/ext/gd/
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config --with-jpeg-dir=/work/jpeg/ --with-freetype-dir=/work/freetype/
+make && make install
+
+vim /work/php/lib/php.ini
+##
+extension=gd.so 
+##
+
+

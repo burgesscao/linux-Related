@@ -1,0 +1,11 @@
+
+
+## 查询同步了多少个用户进来 数据量 
+## 1529308800为时间戳 需要查询
+## 查询地址 https://tool.lu/timestamp/ 凌晨的需要减8小时 0点 就是查前一天的16点
+show databases;
+use xssd_call_center;
+select count(*) from xssd_electrical_user where dts_syn_time > 1529308800;
+
+
+

@@ -1,0 +1,6 @@
+---
+- hosts: DX_web
+  vars:
+  remote_user: www
+  tasks:
+  - command: /home/www/2.sh

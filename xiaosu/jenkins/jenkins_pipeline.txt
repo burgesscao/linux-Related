@@ -1,0 +1,50 @@
+
+中文
+第一:
+    新建任务 选择流水线  确定
+第二:
+    拉到最后流水线-流水线语法  示例步骤选择所需要的(测试选了Git) 配置好Git后 生成流水线脚本如下
+    ###git credentialsId: 'c9e2062b-ea84-4eb8-8e72-e54e7d8c9fbd', url: 'http://47.98.130.143/root/burgess-web-test.git'###
+
+
+第三步:配置流水线步骤
+pipeline {
+    agent any
+    stages {
+        stage('Git pull') {
+            steps {
+                echo 'Git pull'
+                git credentialsId: 'c9e2062b-ea84-4eb8-8e72-e54e7d8c9fbd', url: 'http://47.98.130.143/root/burgess-web-test.git'
+            }
+        }        
+        stage('检测') {
+            steps {
+                echo '检测'
+                sh '/work/1.sh Burgess'
+            }
+        }
+        stage('发布') {
+            steps {
+                echo '发布'
+                sh '/work/1.sh 发布'
+            }
+        }
+        stage('推送') {
+            steps {
+                echo '推送'
+                sh '/work/1.sh 推送'
+            }
+        }
+    }
+}
+
+
+
+
+#### /work/1.sh
+#!/bin/bash
+##
+
+Aaa=$1
+echo `date` $Aaa  >> /usr/local/src/1.txt
+#### /work/1.sh

@@ -1,0 +1,172 @@
+
+
+yum install -y libxml2 libxml2-devel  curl curl-devel libpng-devel libpng freetype-devel libxslt-devel
+
+tar zxvf php-5.6.36.tar.gz
+cd php-5.6.36
+./configure --prefix=/work/php --with-curl --with-freetype-dir --with-gd --with-gettext --with-iconv-dir --with-kerberos --with-libdir=lib64 --with-libxml-dir --with-MySQL --with-mysqli --with-openssl --with-pcre-regex --with-pdo-mysql --with-pdo-sqlite --with-pear --with-png-dir --with-xmlrpc --with-xsl --with-zlib --enable-fpm --enable-bcmath --enable-libxml --enable-inline-optimization --enable-gd-native-ttf --enable-mbregex --enable-mbstring --enable-opcache --enable-pcntl --enable-shmop --enable-soap --enable-sockets --enable-sysvsem --enable-xml --enable-zip
+
+make && make install 
+
+cp php.ini-production /work/php/lib/php.ini
+cp /work/php/etc/php-fpm.conf.defaulf /work/php/etc/php-fpm.conf
+
+
+/work/php/sbin/php-fpm
+
+netstat -tunlp
+
+service iptables stop
+setenforce 0
+
+curl 127.0.0.1
+
+
+
+#####
+ 为php-fpm配置多个pool
+[www]
+listen = /tmp/php-fcgi.sock
+#listen = 127.0.0.1:9000
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+……
+[zhouqun.com]      //添加新的pool
+listen = /tmp/zhouqun.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+
+语法检测
+ /usr/local/php-fpm/sbin/php-fpm -t
+ 
+重新加载配置文件
+/etc/init.d/php-fpm reload
+
+
+为站点设置pool
+vim /usr/local/nginx/conf/vhost/aaa.com.conf
+##
+location ~ \.php$
+    {
+        include fastcgi_params;
+        fastcgi_pass unix:/tmp/zhouqun.sock;    //把fastcgi_pass地址改为和php-fpm.conf中一样的地址就可以
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME /data/wwwroot/default$fastcgi_script_name;
+    }
+##
+
+
+添加php-fpm.conf子配置文件
+vim /usr/local/php-fpm/etc/php-fpm.conf
+[global]
+pid = /usr/local/php-fpm/var/run/php-fpm.pid
+error_log = /usr/local/php-fpm/var/log/php-fpm.log
+include = etc/php-fpm.d/*.conf   //添加
+#在全局变量版块添加参数“include = etc/php-fpm.d/*.conf”。然后可以清除php-fpm配置文件中其他参数，再到php-fpm.d目录下进行单独设置。
+
+创建php-fpm子配置文件
+[root@host php-fpm.d]# vim www.conf
+[www]
+listen = /tmp/php-fcgi.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+[root@host php-fpm.d]# vim zhouqun.conf
+[zhouqun.com]
+listen = /tmp/zhouqun.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+
+php-fpm慢执行日志
+[root@host php-fpm.d]# vim /usr/local/php-fpm/etc/php-fpm.d/www.conf
+……
+request_slowlog_timeout = 1                //当请求超过1秒开始记录日志
+slowlog = /usr/local/php-fpm/var/log/www-slow.log           //日志存放地址
+检测并重加载
+[root@host php-fpm.d]# /usr/local/php-fpm/sbin/php-fpm -t
+[root@host php-fpm.d]# /etc/init.d/php-fpm reload
+
+
+试验
+在使用www pool的站点添加文件：
+[root@host php-fpm.d]# vim /data/wwwroot/test.com/sleep.php   //创建一个.php文件，故意让它休眠2秒，让它运行缓慢
+<?php
+echo "test slow log";
+sleep(2);     
+echo "done";
+?>
+检测
+[root@host php-fpm.d]# curl -x127.0.0.1:80 test.com/sleep.php 
+test slow log done
+
+
+查看慢日志
+[root@host php-fpm.d]# tail /usr/local/php-fpm/var/log/www-slow.log 
+
+[12-Sep-2017 23:42:23]  [pool www] pid 4236
+script_filename = /data/wwwroot/test.com/sleep.php
+[0x00007fe027r0e2f5] sleep() /data/wwwroot/test.com/sleep.php:3      //显示文件的第三行导致的访问慢，因为第三行就是sleep命令
+
+
+
+php-fpm进程管理
+php-fpm中pool配置参数解析：
+[root@host php-fpm.d]# vim www.conf
+[www]
+listen = /tmp/php-fcgi.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+#设置进程启动方式（dynamic表示动态，static表示静态）
+#只有此处设置为dynamic，下面的配置才生效
+pm.max_children = 50   //最多可启动的子进程数量
+pm.start_servers = 20    //设定初始启动的进程数量
+pm.min_spare_servers = 5      //表示php-fpm空闲时最少要有几个子进程
+pm.max_spare_servers = 35   //表示php-fpm空闲时最多要有几个子进程
+pm.max_requests = 500          //表示一个子进程最多可接受多少个请求
+rlimit_files = 1024                     //表示每个子进程打开的多少个文件句柄
+request_slowlog_timeout = 1    //当请求超过1秒开始记录日志
+slowlog = /usr/local/php-fpm/var/log/www-slow.log      //日志存放地址
+php_admin_value[open_basedir]=/data/wwwroot/test.com:/tmp/
+
+
+
+
+
+
+

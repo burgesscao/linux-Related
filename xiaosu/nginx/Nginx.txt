@@ -1,0 +1,171 @@
+
+## yum install wget 
+## wget http://nginx.org/download/nginx-1.14.0.tar.gz
+
+yum install -y gcc gcc-c++ pcre pcre-devel openssl openssl-devel zlib zlib-devel
+
+
+tar zxvf nginx-1.14.0.tar.gz
+
+cd nginx-1.14.0
+./configure --prefix=/work/nginx --user=www --group=www --conf-path=/work/nginx/conf/nginx.conf --http-log-path=/work/nginx/logs/access.log --error-log-path=/work/nginx/logs/error.log --pid-path=/work/nginx/run/nginx.pid --lock-path=/work/nginx/run/nginx.lock --with-http_ssl_module --with-http_stub_status_module --with-http_degradation_module --with-http_gzip_static_module --with-pcre
+
+## ./configure --prefix=/work/nginx --user=www --group=www --conf-path=/work/nginx/conf/nginx.conf --http-log-path=/work/nginx/logs/access.log --error-log-path=/work/nginx/logs/error.log --pid-path=/work/nginx/run/nginx.pid --lock-path=/work/nginx/run/nginx.lock --with-http_ssl_module --with-http_stub_status_module --with-http_degradation_module --with-http_gzip_static_module --with-pcre --with-stream --without-http_rewrite_module
+
+make &&  make install
+
+##
+## systemctl stop firewalld
+## setenforce 0
+
+#启动
+/work/nginx/sbin/nginx
+
+##复制
+cp /work/nginx/conf/nginx.conf /work/nginx/conf/nginx_conf_bk
+
+##  vi /work/nginx/conf/nginx.conf
+##在http ｛｝内增加 不显示版本号  约34行左右
+        server_tokens    off;
+##
+## 去掉注释	并修改 增加php
+### fastcgi_param 要修改成以下
+        location ~ \.php$ {
+            root           /work/nginx/html;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            include        fastcgi_params;
+        }
+## 去掉注释 并修改		
+##是最后 ｝前增加虚拟主机目录
+    include /work/nginx/conf/webhost/*.conf;
+｝
+###	
+
+
+
+###########################Alpine
+apk --update --no-cache add geoip geoip-dev pcre libxslt gd openssl-dev pcre-dev zlib-dev build-base linux-headers libxslt-dev gd-dev openssl-dev libstdc++ libgcc patch logrotate supervisor inotify-tools
+ && rm -rf /var/cache/apk/*
+ 
+tar zxvf nginx-1.14.0.tar.gz 
+cd nginx-1.14.0/
+./configure --prefix=/work/nginx --user=nobody --group=nobody --conf-path=/work/nginx/conf/nginx.conf --http-log-path=/work/nginx/logs/access.log --error-log-path=/work/nginx/logs/error.log --pid-path=/work/ng
+inx/run/nginx.pid --lock-path=/work/nginx/run/nginx.lock --with-http_ssl_module --with-http_stub_status_module --with-http_degradation_module --with-http_gzip_static_module --with-pcre
+
+make && make install
+/work/nginx/sbin/nginx -c /work/nginx/conf/nginx.conf
+###########################Alpine
+
+
+
+
+
+#### vi  /work/nginx/conf/webhost/test.conf
+server {
+
+listen      80;
+server_name  www.test.com;
+root   /work/nginx/html;
+index  index.html index.htm;
+location / {
+    error_page 404 403 http://www.test.com/3.html;
+}
+
+}
+####
+
+##### xiaoshupuhui.conf
+    server {
+        listen       80;
+        server_name  dx.xiaoshupuhui.com;
+
+        charset utf-8;
+
+        access_log  logs/dx.xiaoshupuhui.com.access.log  main;
+        error_log logs/dx.xiaoshupuhui.com.error.log;
+
+
+	## 强制网站使用域名访问，可以逃过IP扫描
+	if ($host !~ ^(dx.xiaoshupuhui.com)$ ) {
+		return 404;
+	}
+	#安全过滤
+        include sites/mfilter;
+
+
+
+        location / {
+            root   /www/html;
+            #include /www/html/.rewrite;
+            index  index.html index.htm index.php;
+
+	        #limit_req zone=one burst=256 nodelay;
+            #limit_conn addr 1;
+
+        }
+
+        error_page  404 403              /404.html;
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+         location ~ \.php(.*)$ {
+            root           /www/html;
+            #fastcgi_pass   127.0.0.1:9000;
+	        fastcgi_pass unix:/usr/local/php/var/run/php-cgi.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            #fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+
+          fastcgi_param  PHP_VALUE  "open_basedir=$document_root:/tmp/";
+          fastcgi_split_path_info ^((?U).+.php)(/?.+)$;
+          fastcgi_param PATH_INFO $fastcgi_path_info;
+          fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+
+          fastcgi_param ENVIRONMENT production; #project args
+        }
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        location ~ /\.ht {
+            deny  all;
+        }
+        location ~ /\.re {
+            deny  all;
+        }
+        location ~ /\.git {
+            deny all;
+        }
+
+        #location ~ .*\.(gif|jpg|jpeg|png|css|js|flv|ico|swf|pdf|mp4)$ {
+        #    expires 30d;
+        #}
+    }
+
+	
+	
+	
+server {
+    listen       80; #监听80端口，接收http请求
+    server_name  www.example.com; #就是网站地址
+    root /usr/local/etc/nginx/www/huxintong_admin; # 准备存放代码工程的路径
+    #路由到网站根目录www.example.com时候的处理
+    location / {
+        index index.php; #跳转到www.example.com/index.php
+        autoindex on;
+    }   
+
+    #当请求网站下php文件的时候，反向代理到php-fpm
+    location ~ \.php$ {
+        include /usr/local/etc/nginx/fastcgi.conf; #加载nginx的fastcgi模块
+        fastcgi_intercept_errors on;
+        fastcgi_pass   127.0.0.1:9000; #nginx fastcgi进程监听的IP地址和端口
+    }
+
+}
+
+

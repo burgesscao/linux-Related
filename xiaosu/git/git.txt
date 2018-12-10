@@ -1,0 +1,281 @@
+#开账号
+#账号:拼音全名
+#登录:http://47.98.130.143/
+#密码:Aa123456
+#先登录更改密码
+#开完后记录好
+
+
+
+
+
+yum install curl-devel expat-devel gettext-devel openssl-devel zlib-devel gcc perl-ExtUtils-MakeMaker -y
+
+##检测系统中git的版本
+yum info git
+
+yum remove git -y
+
+##git最新源码下载地址
+##https://github.com/git/git/releases
+##https://www.kernel.org/pub/software/scm/git/
+
+wget https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.17.0.tar.gz
+tar zxvf git-2.17.0.tar.gz
+cd git-2.17.0
+./configure --prefix=/work/git
+make && make install
+
+vi /etc/profile
+## 增加
+#git settings
+GIT_HOME=/work/git
+export PATH=$JAVA_HOME/bin:$GIT_HOME/bin:$PATH
+## 增加
+
+source /etc/profile
+git --version
+
+#/work/git/bin/git --version
+
+##将git设置为默认路径
+ln -s /work/git/bin/git-upload-pack  /usr/bin/git-upload-pack
+ln -s /work/git/bin/git-receive-pack /usr/bin/git-receive-pack 
+
+##创建git用户
+useradd git
+passwd git
+
+su git
+mkdir /home/git/.ssh/
+touch /home/git/.ssh/authorized_keys
+
+####将RSA认证打开
+##vi /etc/ssh/sshd_config
+####
+##1.RSAAuthentication yes
+##2.PubkeyAuthentication yes
+##3.AuthorizedKeysFile .ssh/authorized_keys
+####
+##重启
+#systemctl restart sshd
+
+
+初始化Git仓库
+mkdir -p /date/git
+cd /date/git/
+git init --bare burgess.git
+chown -R git:git /date/git/
+
+vi /etc/passwd
+##
+git:x:1001:1001::/home/git:/usr/local/git/bin/git-shell
+##
+
+
+##安装windows客户端git
+##https://gitforwindows.org/
+
+##进入安装目录打开git-bash 生成公钥
+ssh-keygen -t rsa -C "cyh@burgess.com"
+
+##将C:\Users\Administrator\.ssh\id_rsa.pub 传上服务器 
+##服务器导入到/home/git/.ssh/authorized_keys
+cat id_rsa.pub >> /home/git/.ssh/authorized_keys
+
+##使用idea或gitbash从git服务器上clone项目
+git clone git@192.168.233.132:/date/git/burgess.git
+
+##配置邮箱用户
+git config --global user.email "cyh@burgess.com"
+git config --global user.name "cyh"
+
+##Git[初次提交代码到空的远端仓库]
+##在 GitHub 创建仓库时如果没有附带创建 README、LICENSE、.gitignore 文件三者其一时
+##cd ..
+##mkdir cyh
+##git init
+touch README.md  
+git add .
+git commit -m "first commit"  
+git remote add origin git@192.168.233.132:/date/git/burgess.git
+git push -u origin master  
+
+##cd ..返回上层
+##mkdir cyh 创建目录
+##git init 初始化仓库
+##touch README.md 创建自述文件README.md
+##git add . 添加整个目录
+##git commit -m "burgess"  提交到本地-m后面输入的是本次提交的说明(最好说明更新的功能项)
+##git remote add origin git@192.168.233.132:/date/git/burgess.git  提交到git
+##git push -u origin master  最后push到网上git仓库中
+
+
+
+##通过命令行推送一个已存在的版本库
+git remote add origin git@192.168.233.135:/data/git/burgess.git
+git push -u origin master
+
+#####################git分支
+git branch                       查看分支
+git branch Burgess               创建分支
+git checkout Burgess             切换分支
+echo "burgess test" > 66.txt     增加测试文件
+git add .                        添加整个目录
+git commit -m "burgess 66.txt"   提交到本地
+git push origin Burgess          最后push到分支
+git checkout master              切换到master查看 没有提交的分支文件
+git merge Burgess                合并某分支到当前分支
+git add 66.txt                   添加66.txt文件
+git commit -m "up burges master" 提交到本地
+git push                         提交到master
+#####################git分支
+
+###### 可以理解为”挑拣”提交
+git cherry-pick 2555c6e
+###### 可以理解为”挑拣”提交
+
+Git鼓励大量使用分支：
+查看分支：git branch
+创建分支：git branch <name>
+切换分支：git checkout <name>
+创建+切换分支：git checkout -b <name>
+将新分支发布在github上： git push origin master
+合并某分支到当前分支：git merge <name>
+删除分支：git branch -d <name>
+注意删除远程分支后，如果有对应的本地分支，本地分支并不会同步删除！
+
+##拉代码
+git clone
+git pull //把远程代码拉到本地，
+
+
+
+##Git问题Everything up-to-date正确解决方法
+##先创建一个新的分支提交改动
+git branch burgess2
+
+##检查这条命令是否创建成功 
+git branch
+
+##切换工作分支
+git checkout burgess2
+
+##将你的改动提交到新的分支上
+git add 2.txt
+
+##git status 检查下提交情况  -m后面输入的是本次提交的说明
+git commit -m "skin"
+
+##提交成功后回主分支
+git checkout master
+
+##将新分支提交的改动合并到主分支上,合并分支可能产生冲突这是正常的
+git merge burgess2
+
+##查看产生冲突的文件,然后做对应的修改再提交一次就可以了
+git diff
+
+##接下来就可以push代码了
+git push -u origin master
+
+##删除分支
+git branch -D burgess2
+#如果想保留分支只是想删除已经合并的部分使用git branch -d burgess2
+
+
+##Git版本回退
+##命令查看历史
+git log
+#git log --pretty=oneline
+
+##回退上一个版本  Git必须知道当前版本是哪个版本
+##在Git中，7ca23965729091adad74285618f8290aedea761e
+##上一个版本就是HEAD^，上上一个版本就是HEAD^^，当然往上100个版本写100个^比较容易数不过来，所以写成HEAD~100
+git reset --hard HEAD^
+# 退回指定版本
+# git reset --hard 7ca23965729091adad74285618f8290aedea761e
+
+## 查远程
+git remote -v
+
+git status   /*--如果没有做过修改， 会提示当前没有可提交的内容；--*/
+git diff     /*--显示所有更改过的内容-------------------------*/
+git diff /e/git/aa.txt   /*--指定文件查看-------------------*/
+
+
+
+权限问题
+cd your_rep.git  
+chmod -R g+ws *  
+chgrp -R git *  
+git config core.sharedRepository true  
+
+
+
+usage: git [--version] [--help] [-c name=value]                                       用法：git [--version] [--help] [-c name = value]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]                       [--exec-path [= <path>]] [--html-path] [--man-path] [--info-path]
+           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]                            [-p | --paginate | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]                          [--git-dir = <path>] [--work-tree = <path>] [--namespace = <name>]
+           <command> [<args>]                                                                    <command> [<args>]
+                                                                                      
+The most commonly used git commands are:                                              最常用的git命令是：
+   add        Add file contents to the index                                             添加文件内容到索引
+   bisect     Find by binary search the change that introduced a bug                     bisect通过二进制搜索查找引入错误的更改
+   branch     List, create, or delete branches                                           分支列表，创建或删除分支
+   checkout   Checkout a branch or paths to the working tree                             结账签出一个或多个工作树的路径
+   clone      Clone a repository into a new directory                                    克隆将存储库克隆到新目录中
+   commit     Record changes to the repository                                           将记录更改提交到存储库
+   diff       Show changes between commits, commit and working tree, etc                 差异显示提交，提交和工作树等之间的变化
+   fetch      Download objects and refs from another repository                          从另一个存储库获取下载对象和引用
+   grep       Print lines matching a pattern                                             grep打印符合模式的行
+   init       Create an empty Git repository or reinitialize an existing one             init创建一个空的Git存储库或重新初始化现有的存储库
+   log        Show commit logs                                                           日志显示提交日志
+   merge      Join two or more development histories together                            合并将两个或更多发展历史结合在一起
+   mv         Move or rename a file, a directory, or a symlink                           mv移动或重命名文件，目录或符号链接
+   pull       Fetch from and merge with another repository or a local branch             从另一个存储库或本地分支中提取并合并
+   push       Update remote refs along with associated objects                           推送更新远程参考以及关联的对象
+   rebase     Forward-port local commits to the updated upstream head                    rebase转发端口本地提交到更新的上行头
+   reset      Reset current HEAD to the specified state                                  重置将当前HEAD重置为指定状态
+   rm         Remove files from the working tree and from the index                      rm从工作树和索引中删除文件
+   show       Show various types of objects                                              显示显示各种类型的对象
+   status     Show the working tree status                                               状态显示工作树的状态
+   tag        Create, list, delete or verify a tag object signed with GPG                标签创建，列出，删除或验证使用GPG签名的标签对象
+   
+   
+   
+   
+   
+   
+   
+   
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

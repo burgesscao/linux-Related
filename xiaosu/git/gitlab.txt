@@ -1,0 +1,40 @@
+
+
+sudo yum install -y curl policycoreutils-python openssh-server
+sudo systemctl enable sshd
+sudo systemctl start sshd
+sudo firewall-cmd --permanent --add-service=http
+sudo systemctl reload firewalld
+
+
+sudo yum install postfix
+sudo systemctl enable postfix
+sudo systemctl start postfix
+
+
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rpm.sh | sudo bash
+
+
+sudo EXTERNAL_URL="http://gitlab.example.com" yum install -y gitlab-ee
+
+sudo gitlab-ctl reconfigure
+
+
+
+
+vi /etc/postfix/main.cf
+
+
+
+
+remote: HTTP Basic: Access denied
+fatal: Authentication failed for 'http://192.168.233.132/root/test2.git/'
+##报以上错误
+##执行以下
+git config --system --unset credential.helper
+
+
+##本地库切换
+git remote set-url origin http://192.168.233.132/root/test2.git
+
+

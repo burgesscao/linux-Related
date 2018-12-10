@@ -1,0 +1,15 @@
+188 项目
+Redis
+Mysql
+Nginx
+PHP
+
+zp#2e
+
+Nginx 错误日志
+/usr/local/nginx/logs
+
+Nginx 配置文件
+/usr/local/nginx/conf
+
+

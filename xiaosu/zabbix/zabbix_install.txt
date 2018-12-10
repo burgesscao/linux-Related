@@ -1,0 +1,22 @@
+
+## 不包括port、php、mysql
+
+##官网：https://www.zabbix.com/documentation/3.4/zh/manual/installation/install
+##https://www.zabbix.com/download_sources
+
+## 创建用户
+groupadd zabbix
+useradd -g zabbix zabbix
+
+## 解压
+tar zxvf zabbix-3.4.12.tar.gz
+cd zabbix-3.4.12
+
+## 安装依赖包
+yum -y install net-snmp-devel libxml2-devel libcurl-deve libevent libevent-devel gcc mysql-devel curl-devel
+
+##
+./configure --prefix=/work/zabbix --enable-server --enable-agent --with-mysql --enable-ipv6 --with-net-snmp --with-libcurl --with-libxml2
+
+## 安装
+make install

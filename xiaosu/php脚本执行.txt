@@ -1,0 +1,46 @@
+
+
+
+
+##需要在/www/html目录下
+#####在18，19行更改所需要的时间
+vi /www/html/application/classes/task/UsersMailToSomeOne.php
+##
+    $yesterday= strtotime('2018-06-18 00:00:00');
+    $today = strtotime('2018-06-19 00:00:00');
+##
+####切换用户执行脚本
+su www
+cd /www/html/
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=LfqYesterdayData --env=production
+
+### 完成后把配置文件用git checkout还原
+cd /www/thml
+git checkout application/classes/task/UsersMailToSomeOne.php
+##
+
+
+
+
+####切换用户执行脚本
+## DispatchUser 与 CancelDispatch
+su www
+cd /www/html/
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=LfqAndLzxMakeLoan --env=production
+
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=CancelDispatch --env=production
+
+
+
+## 查询同步了多少个用户进来 数据量 
+## 1529308800为时间戳 需要查询
+## 查询地址 https://tool.lu/timestamp/ 凌晨的需要减8小时 0点 就是查前一天的16点
+# show databases;
+# use xssd_call_center;
+# select count(*) from xssd_electrical_user where dts_syn_time > 1529308800;
+
+
+
+LfqBeforeThreeNotLte
+
+

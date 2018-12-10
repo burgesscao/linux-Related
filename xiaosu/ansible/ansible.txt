@@ -1,0 +1,371 @@
+
+yum install ansible -y
+
+### 生成密钥
+ssh-keygen -t dsa
+
+## 
+grep -vE ^'(#|$)' /etc/ansible/ansible.cfg
+[defaults]
+roles_path    = /etc/ansible/roles:/usr/share/ansible/roles
+host_key_checking = False
+[inventory]
+[privilege_escalation]
+[paramiko_connection]
+[ssh_connection]
+[persistent_connection]
+[accelerate]
+[selinux]
+[colors]
+[diff]
+
+
+配置文件或指令
+/etc/ansible/ansible.cfg      ## 主配置文件，配置ansible工作特性
+/etc/ansible/hosts            ## 主机清单
+/etc/ansible/roles/           ## 存放角色的目录
+/usr/bin/ansible              ## 主程序，临时命令执行工具
+/usr/bin/ansible-doc          ## 查看配置文档，模块功能查看工具
+/usr/bin/ansible-galaxy       ## 下载/上传优秀代码或Roles模块的官网平台
+/usr/bin/ansible-playbook     ## 定制自动化任务，编排剧本工具
+/usr/bin/ansible-pull         ## 远程执行命令的工具
+/usr/bin/ansible-vault        ## Ansible 文件加密工具
+/usr/bin/ansible-console      ## Ansible基于Linux Consoble界面可与用户交互的命令执行工具
+
+
+
+## 分发密钥 方法一：
+# ssh-copy-id 192.168.233.168/24
+## ssh-copy-id -i /root/.ssh/id_rsa.pub root@172.16.129.192
+
+
+## 分发密钥 方法二：
+## 增加主机
+vim /etc/ansible/hosts
+[WEB]
+192.168.233.132 ansible_user=root ansible_ssh_pass="Aa123qwe~"
+192.168.233.133 ansible_user=root ansible_ssh_pass="Aa123qwe~"
+
+## 编制自动化任务
+vim pushssh.ymal
+- hosts: web
+  remote_user: root
+  tasks:
+      - name: copy 
+        authorized_key: user=root key="{{ lookup('file', '/root/.ssh/id_dsa.pub') }}"
+        tags:
+          - sshkey
+## 执行
+ansible-playbook pushssh.ymal		  
+
+## 分发密钥
+ansible web -m  authorized_key  -a "user=root key='{{ lookup('file', '/root/.ssh/id_rsa.pub') }}'"
+
+## 查看web组所在默认目录
+ansible web -a "pwd"
+
+## 在/usr/local/src目录下执行pwd
+ansible web -a "pwd chdir=/usr/local/src"
+
+############ cat burgess.sh ############
+##!/bin/bash
+
+echo `date` "168 test "  >> /usr/local/src/1.txt
+############ cat burgess.sh ############
+
+
+######################## COPY 
+backup： 在覆盖之前，将源文件备份，备份文件包含时间信息。有两个选项：yes|no
+content：用于替代“src”，可以直接设定指定文件的值
+dest：   必选项。要将源文件复制到的远程主机的绝对路径，如果源文件是一个目录，那么该路径也必须是个目录
+force：  如果目标主机包含该文件，但内容不同，如果设置为yes，则强制覆盖，如果为no，则只有当目标主机的目标位置不存在该文件时，才复制。默认为yes
+others： 所有的file模块里的选项都可以在这里使用
+src：    被复制到远程主机的本地文件，可以是绝对路径，也可以是相对路径。如果路径是一个目录，它将递归复制。在这种情况下，如果路径使用“/”来结尾，则只复制目录里的内容，如果没有使用“/”来结尾，则包含目录在内的整个内容全部复制，类似于rsync。
+directory_mode：递归设定目录的权限，默认为系统默认权限
+
+file模块
+## 创建目录
+ansible web -m file -a "path=/usr/local/src/burgessC state=directory"
+## 删除
+ansible web -m file -a "path=/usr/local/src/burgessC state=absent" 
+
+## 复制本地文件burgess.sh 到web组/usr/local/src/目录下 权限为0777 所属用户、组为www
+## ansible web -m copy -a "content='Hello Burgess' mode=444 owner=www group=www dest=/usr/local/src/1.txt"
+ansible web -m copy -a "src=burgess.sh mode=444 owner=www group=www dest=/usr/local/src/"
+
+############ 测试不会执行 ############
+## 测试不会执行
+ansible web -C -a "bash /usr/local/src/burgess.sh"
+ansible web -a "ls /usr/local/src"
+
+## 
+ansible web -a "bash /usr/local/src/burgess.sh"
+ansible web -a "ls /usr/local/src"
+ansible web -a "cat /usr/local/src/1.txt"
+############ 测试不会执行 ############
+
+
+
+## 从远程服务器拉取文件至本机，只能fetch文件，不能fetch目录,如果拉目录，先tar/zip 再拉到本机即可
+## 目标src  本地dest
+ansible web -m fetch -a "src=/root/aa.txt dest=/usr/local/src/aa.txt"
+
+
+## yum 安装
+ansible all -m yum -a "name=lrzsz state=latest"
+
+## 重启
+ansible all -m service -a "name=nginx state=restarted"
+
+## 开机启动
+ansible all -m service -a "name=nginx  enabled=true" 
+
+## 发送脚本到各被管理节点，并执行;不需要参数
+ansible web -m script -a 'test.sh'
+## 发送脚本到各被管理节点，并执行;带参数
+ansible web -m script -a 'test.sh aa bb'
+
+ansible-vault encrypt hello.yml  # 加密
+ansible-vault decrypt hello.yml  # 解密
+ansible-vault view hello.yml     # 查看
+
+
+## 检测语法：
+ansible-playbook –syntax-check /path/to/playbook.yaml
+
+
+## 实现在远程主机下载指定 URL 到本地，支持 sha256sum 文件校验
+ansible web -m get_url -a "url=http://nginx.org/download/nginx-1.14.0.tar.gz dest=/usr/local/src mode=0644 force=yes"
+
+
+
+安装Ansile
+yum install epel-release -y
+yum install ansible -y
+
+
+
+配置Ansible管理节点和主机的连接
+# 生成ssh key
+ssh-keygen
+# 拷贝ssh key到远程主机，ssh的时候就不需要输入密码了
+ssh-copy-id root@192.168.1.1
+# ssh的时候不会提示是否保存key
+ssh-keyscan remote_servers >> ~/.ssh/known_hosts
+
+验证SSH配置
+ssh root@192.168.1.1
+
+指定用户 vim/etc/ansible/hosts
+172.168.1.1    ansible_ssh_user=www
+
+Ansible管理哪些主机
+/etc/ansible/hosts
+####例子
+mail.example.com
+
+[webservers]
+foo.example.com
+bar.example.com
+
+[dbservers]
+one.example.com
+two.example.com
+three.example.com
+####例子
+
+
+
+检查ansible安装环境
+ansible all -m ping -u bruce
+
+
+执行命令
+ansible all -a "/bin/echo hello"
+ansible all -a "/usr/sbin/ip a"
+
+拷贝文件 web组的所有机
+ansible web -m copy -a "src=/etc/hosts dest=/tmp/hosts"
+
+
+#安装包远程主机（组）web安装yum包acme  
+# state=present安装    state=absent删除
+ansible web -m yum -a "name=docker state=present" 
+
+
+添加用户
+ansible all -m user -a "name=foo password=<crypted password here>"
+
+下载git包
+ansible web -m git -a "repo=git://foo.example.org/repo.git dest=/srv/myapp version=HEAD"
+
+
+启动服务
+ansible web -m service -a "name=httpd state=started"
+ 
+ 
+查看远程主机的全部系统信息
+ansible all -m setup
+
+
+Ansible用脚本管理主机
+
+## 执行脚本playbook的方法
+ansible-playbook deploy.yml
+
+检查yaml文件的语法是否正确
+ansible-playbook 3.yml --syntax-check
+
+检查yaml文件中的tasks任务
+ansible-playbook 3.yml --list-task
+
+检查yaml文件中的生效主机
+ansible-playbook 3.yml --list-hosts
+
+###使用ansible-doc 了解模块使用方法
+ansible-doc yum
+
+playbook的例子
+deploy.yml的功能为web主机部署apache, 其中包含以下部署步骤：
+
+安装apache包；
+拷贝配置文件httpd，并保证拷贝文件后，apache服务会被重启；
+拷贝默认的网页文件index.html；
+启动apache服务；
+playbook deploy.yml包含下面几个关键字，每个关键字的含义：
+
+hosts：为主机的IP，或者主机组名，或者关键字all
+remote_user: 以哪个用户身份执行。
+vars： 变量
+tasks: playbook的核心，定义顺序执行的动作action。每个action调用一个ansbile module。
+
+####使用管道
+ansible all -m raw -a 'ps -ef |grep nginx'
+ansible DX_web -m shell -a "chdir=/www/html  git log | head -n 5"
+
+###
+nginx.yml
+ansible-playbook nginx.yml
+
+########## 安装nginx
+---
+- hosts: Test
+  vars:
+  remote_user: root
+  tasks:
+  - name: ensure nginx is at the latest version
+    yum: pkg=nginx state=latest
+
+  - name: ensure nginx is running
+    service: name=nginx state=started
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted
+###########
+
+
+
+####复制设置文件权限
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - copy:
+      src: /root/3.yml
+      dest: /root/3.yml
+      owner: root
+      group: root
+      mode: 0644
+#####
+
+#####创建一个新文件
+- file:
+    path: /etc/foo.conf
+    state: touch
+    mode: "u=rw,g=r,o=r"
+#####
+
+
+#####拷贝文件进行权限设置，文件备份，以及验证功能
+- template:
+    src: etc/ssh/sshd_config.j2
+    dest: /etc/ssh/sshd_config.j2
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/sshd -t %s
+    backup: yes
+######
+
+######删除nginx包
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - name: remove the nginx package
+    yum:
+      name: nginx
+      state: absent
+######
+
+###### 从本地文件中安装包   URL中安装包
+- name: install nginx rpm from a local file
+  yum:
+    name: /usr/local/src/nginx-release-centos-6-0.el6.ngx.noarch.rpm
+    state: present
+######
+
+######开nginx服务
+  - service:
+      name: nginx
+      state: started
+######
+
+######关nginx服务
+  - service:
+      name: nginx
+      state: stopped
+######
+
+######重起服务
+  - service:
+      name: nginx
+      state: restarted
+#######
+
+#######启动网络服务下的接口
+- service:
+    name: network
+    state: restarted
+    args: eth0
+########
+
+
+######调用脚本
+ - shell: somescript.sh >> somelog.txt
+####### 
+	
+#######执行shell脚本
+---
+- hosts: web
+  vars:
+  remote_user: root
+  tasks:
+  - copy:
+      src: /root/1.sh
+      dest: /root/1.sh
+      owner: root
+      group: root
+      mode: 0777
+  - command: /root/1.sh
+    args:
+      chdir: /root
+      creates: /root/test3.txt
+###/root/test3.txt 文件不存在的时候才执行1.sh	  
+###########	
+
+
+
+

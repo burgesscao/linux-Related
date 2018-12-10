@@ -1,0 +1,113 @@
+
+拉代码  188 电销项目
+##拉取忽略index.php文件
+## 拉完89要到37上拉
+su www
+cd /www/html
+git update-index --assume-unchanged index.php 
+git pull
+
+###############################
+######查看冲突并忽略
+git status
+git checkout application/classes/task/LfqYesterdayData.php
+######
+
+
+
+########执行脚本  替换所需DispatchUser脚本名
+cd /www/html
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=DispatchUser --env=production
+########执行脚本 
+################################
+
+#pull后打开网页检查正常情况
+## 电销网
+## dx.xiaoshupuhui.com
+
+## 小树时代
+## qfd.xiaoshushidai.com
+
+## 退回 
+git checkout /www/html/application/classes/task/LfqYesterdayData.php
+
+
+需要修改代码需要先在本地修改后，到服务器上pull
+
+## redis路径
+## /www/html/application/config/production
+
+
+######################PHP定时任务
+vim /www/html/application/config/production/task.php
+####
+array(
+            'class' => 'UsersMailToSomeOne', //用户池数据同步
+            'enable' => true, //是否启用task
+            'args' => '', //额外的传递给task的命令行参数
+            'pidfile' => '', //pid文件路径,留空会使用默认规则在storage下面生成pid文件
+            'cron' => '0 30 00 * * *', //执行周期,使用标准的crontab五位写法,另外支持六位写法,第一位是秒
+            'log' => true, //是否记录日志
+            'log_path' => STORAGE_PATH . 'task/UsersMailToSomeOne.log', //日志文件路径
+            'log_size' => 2 * 1024 * 1024, //日志最大大小,单位字节
+        )
+####
+
+##Subject
+/www/html/application/classes/task/LfqBeforeThreeNotLte.php
+LfqYesterdayData       针对龙分期相关数据进行每日的导出并且发邮件
+LfqBeforeThreeNotLte   大部分放款龙分期但无申请龙提额的用户
+LfqAndLzxMakeLoan      龙系列放款成功的用户订单
+
+修改 class 问开发拿
+enable 一定要为true
+log_path  修改错误日志名
+cron' => '0 30 00 * * *',   秒，分，时，日，周，月
+
+Golds
+
+## 数据库地址  线上目录production
+vim /www/html/application/config/production/database.php
+
+
+
+## redis路径  更换redis类型
+## vim /www/html/application/config/default/cache.php
+## vim /www/html/application/config/production/lock.php
+ 7     'default_type' => 'file', //默认的缓存类型，值是下面drivers关联数组的键名称。
+
+
+## mq
+vim /www/html/application/config/production/amqp.php 
+ 
+
+企飞贷项目
+###  拉取
+cd/qfd/company_loan 
+git pull
+
+#pull后打开网页检查正常情况
+qfd.xiaoshushidai.com
+
+
+
+
+###### 电销迁移 复制application/config  目录
+## 修改sql
+application/config/production/database.php
+## 修改redis
+application/config/production/lock.php
+application/config/production/cache.php
+application/config/production/session.php
+## 修改域名
+index.php
+application/config/production/mode.php
+## 修改mq
+application/config/production/amqp.php
+## 修改php定时php路径
+vim /www/html/application/config/production/task.php
+/www/html/application/hmvc/admin/config/production/task.php
+
+
+
+

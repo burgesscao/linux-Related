@@ -1,0 +1,43 @@
+
+
+https://www.python.org/
+
+wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tgz
+yum -y install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel xz-devel wget lrzsz gcc gcc-c++
+yum install libffi-devel -y
+
+tar zxvf Python-3.7.0.tgz
+cd Python-3.7.0
+./configure --prefix=/work/python3
+make && make install 
+
+
+
+ln -s /work/python3/bin/python3 /usr/bin/
+ln -s /work/python3/bin/pip3 /usr/bin/pip3
+
+vi ~/.bash_profile
+## 增加
+PATH=$PATH:$HOME/bin:/work/python3/bin
+## 增加
+
+source ~/.bash_profile
+
+
+
+### pip
+yum install -y epel-release
+yum install python37-pip
+
+
+yum -y groupinstall "Development tools"
+yum -y install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel xz-devel
+pip3 install scrapy
+
+
+## https://www.pygame.org/wiki/CompileRedHat
+yum install python-devel SDL_image-devel SDL_mixer-devel SDL_ttf-devel SDL-devel smpeg-devel numpy subversion portmidi-devel -y
+git clone https://github.com/pygame/pygame
+cd pygame
+python3 setup.py build
+python3 setup.py install

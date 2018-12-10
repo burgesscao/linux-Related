@@ -1,0 +1,52 @@
+yum  -y  install  sendmail
+yum install -y mailx
+
+systemctl  start  sendmail
+
+## 发送邮件
+mail  -s  'Hello'  60113@qq.com  <  test.txt 
+
+## 设置发件人信息：vim /etc/mail.rc
+######
+set from=sky_t@163.com
+set smtp=smtp.163.com
+set smtp-auth-user=sky_t@163.com
+set smtp-auth-password=passwdddddd
+set smtp-auth=login
+######
+
+
+systemctl  restart  sendmail
+
+### "Hello"主题 /root/1.sh内容
+mail -s "Hello" 35@qq.com < /root/1.sh
+
+
+###查看队列：
+mailq
+
+## 查看日志：
+tail -f /var/log/maillog
+
+
+
+###使用465端口
+cat /etc/mail.rc 
+#####
+set from=sky_goblet@163.com
+set smtp="smtps://smtp.163.com:465"
+set smtp-auth-user=sky_goblet@163.com
+set smtp-auth-password=
+set smtp-auth=login
+set ssl-verify=ignore
+set nss-config-dir=/root/.163mail
+#####
+
+
+mkdir /root/.163mail
+echo -n | openssl s_client -connect smtp.163.com:465 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > ~/.163mail/163.crt
+certutil -A -n "GeoTrust SSL CA" -t "C,," -d ~/.163mail -i ~/.163mail/163.crt
+certutil -A -n "GeoTrust Global CA" -t "C,," -d ~/.163mail -i ~/.163mail/163.crt
+certutil -L -d /root/.163mail
+
+systemctl restart sendmail

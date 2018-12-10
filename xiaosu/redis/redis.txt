@@ -1,0 +1,402 @@
+
+主
+## rz redis.tar.gz
+##yum install -y wget lrzsz gcc gcc-c++ pcre pcre-devel openssl openssl-devel zlib zlib-devel
+
+vi /etc/selinux/config
+##修改
+SELINUX=disabled
+##修改
+##sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config 
+
+#暂时关闭
+setenforce 0
+systemctl stop firewalld
+
+#重启
+reboot
+
+#关闭防火墙
+systemctl stop firewalld
+
+mkdir -p /work/redisdb
+tar zxvf redis-4.0.9.tar.gz
+mv redis /work/redis
+cd /work/redis
+make
+
+mv redis.conf redis_conf_bk
+mv sentinel.conf sentinel_conf_bk
+
+## redis.conf只修改bind daemonize  port
+mv /work/redis/redis.conf /work/redis/redis_conf_bk
+cat > /work/redis/redis.conf << EOF
+bind 192.168.233.129 127.0.0.1   
+requirepass burgess
+protected-mode yes
+port 7700 
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+daemonize yes   
+supervised no
+pidfile /var/run/redis_6379.pid
+loglevel notice
+logfile ""
+databases 16
+always-show-logo yes
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir /work/redisdb
+slave-serve-stale-data yes
+slave-read-only yes
+repl-diskless-sync no
+repl-diskless-sync-delay 5
+repl-disable-tcp-nodelay no
+slave-priority 100
+lazyfree-lazy-eviction no
+lazyfree-lazy-expire no
+lazyfree-lazy-server-del no
+slave-lazy-flush no
+appendonly no
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+aof-load-truncated yes
+aof-use-rdb-preamble no
+lua-time-limit 5000
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+latency-monitor-threshold 0
+notify-keyspace-events ""
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-size -2
+list-compress-depth 0
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+hll-sparse-max-bytes 3000
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+hz 10
+aof-rewrite-incremental-fsync yes
+EOF
+
+
+##启动
+/work/redis/src/redis-server /work/redis/redis.conf 
+
+##测试
+[root@localhost redis]# /work/redis/src/redis-cli -a burgess -h 127.0.0.1 -p 7700
+127.0.0.1:6379> set name aaa
+OK
+127.0.0.1:6379> get name 
+"aaa"
+127.0.0.1:6379> exit
+##测试
+
+##连接redis  -a为密码 -h为主机 -p端口
+##/work/redis/src/redis-cli -a -h -p
+##/work/redis/src/redis-cli -a burgess -h 127.0.0.1 -p 7700
+
+
+从
+##yum install -y wget lrzsz gcc gcc-c++ pcre pcre-devel openssl openssl-devel zlib zlib-devel lrzsz
+## rz redis.tar.gz
+
+vi /etc/selinux/config
+##修改
+SELINUX=disabled
+##修改
+##sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config 
+
+#暂时关闭
+setenforce 0
+
+systemctl stop firewalld
+
+mkdir -p /work/redisdb
+tar zxvf redis.tar.gz
+mv redis /work/
+cd /work/redis
+make
+
+## 从只增加slaveof 192.168.233.134 6379   
+## 如果改了port端口 需要把sentinel.conf这个文件端口改成对应的+2000 例：26380
+mv /work/redis/redis.conf /work/redis/redis_conf_bk
+cat > /work/redis/redis.conf << EOF
+bind 127.0.0.1
+requirepass burgess    
+masterauth "burgess"  
+protected-mode yes
+port 7700
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+daemonize yes
+supervised no
+pidfile /var/run/redis_6379.pid
+loglevel notice
+logfile ""
+databases 16
+always-show-logo yes
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir /work/redisdb
+slave-serve-stale-data yes
+slave-read-only yes
+repl-diskless-sync no
+repl-diskless-sync-delay 5
+repl-disable-tcp-nodelay no
+slave-priority 100
+lazyfree-lazy-eviction no
+lazyfree-lazy-expire no
+lazyfree-lazy-server-del no
+slave-lazy-flush no
+appendonly no
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+aof-load-truncated yes
+aof-use-rdb-preamble no
+lua-time-limit 5000
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+latency-monitor-threshold 0
+notify-keyspace-events ""
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-size -2
+list-compress-depth 0
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+hll-sparse-max-bytes 3000
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+hz 10
+aof-rewrite-incremental-fsync yes
+slaveof 192.168.233.134 7700      
+EOF
+##修改如下内容
+
+##启动
+/work/redis/src/redis-server /work/redis/redis.conf 
+
+##测试
+[root@localhost redis]# /work/redis/src/redis-cli -a wQWl=qzd2018 -h 127.0.0.1 -p 7700
+127.0.0.1:6379> get name 
+"aaa"
+127.0.0.1:6379> exit
+##测试
+
+
+
+
+##测试
+redis-cli -h 127.0.0.1 -p 7700
+127.0.0.1:6379> get name 
+
+
+## 启动、停止、重启脚本
+cat > /root/redis.sh << EOF
+#!/bin/bash
+##Burgess
+##
+
+############################# sentinel 哨兵
+vi /work/redis/sentinel.conf
+bind 127.0.0.1 192.168.233.132
+##修改如下内容 masterIP port 确认数 master密码
+sentinel monitor mymaster 192.168.233.140 7700 2
+sentinel auth-pass mymaster burgess
+##修改如下内容 
+
+启动
+/work/redis/src/redis-sentinel /work/redis/sentinel.conf
+##nohup /work/redis/src/redis-sentinel /work/redis/sentinel.conf &
+############################# sentinel 哨兵
+
+
+
+##Redis 缓存清理  有可能会造成数据丢失 慎重操作
+redis集群指定key值得缓存清理
+redis-cli -h 192.168.2.2 -p 6379
+keys *           ##查看所有key值
+del test     ##删除keys值为test的键
+
+
+P_ort=`ps -ef |grep redis | grep -v grep | awk '{print $2}'`
+Rd_ser="/root/redis/src/redis-server"
+Rd_cof="/root/redis/redis.conf"
+
+echo "please input (start stop restart) :"
+read S_tart
+
+##S_tart=$1
+
+echo $S_tart
+
+if [ $S_tart == start ];then
+    $Rd_ser $Rd_cof
+elif [ $S_tart == restart ];then
+    kill -9 $P_ort
+    $Rd_ser $Rd_cof
+elif [ $S_tart == stop ];then
+    kill -9 $P_ort
+else
+    echo sorry , input error 
+fi
+EOF
+
+chmod 777 /root/redis.sh
+
+
+##redis 备份 与 恢复
+[root@localhost redis]# src/redis-cli -p 6380
+127.0.0.1:6380> save
+OK
+127.0.0.1:6380> 
+##redis 备份
+该命令将在 redis 安装目录中创建dump.rdb文件。
+
+恢复数据
+如果需要恢复数据，只需将备份文件 (dump.rdb) 移动到 redis 安装目录并启动服务即可。
+127.0.0.1:6380> CONFIG GET dir
+1) "dir"
+2) "/root/redis"
+###以上查看安装目录
+
+Redis 性能测试
+/src/redis-benchmark -n 1000 -q
+-h	指定服务器主机名
+-p	指定服务器端口
+-s	指定服务器 socket
+-c	指定并发连接数
+-n	指定请求数
+-d	以字节的形式指定 SET/GET 值的数据大小
+-k	1=keep alive 0=reconnect
+-r	SET/GET/INCR 使用随机 key, SADD 使用随机值
+-P	通过管道传输 <numreq> 请求
+-q	强制退出 redis。仅显示 query/sec 值
+--csv	以 CSV 格式输出
+-l	生成循环，永久执行测试
+-t	仅运行以逗号分隔的测试命令列表。
+-I	Idle 模式。仅打开 N 个 idle 连接并等待。
+
+##性能查看与监控
+[root@localhost redis]# src/redis-benchmark  -t set,lpush -n 10000 -q
+SET: 60975.61 requests per second
+LPUSH: 68965.52 requests per second
+执行的命令为 set,lpush，请求数为 10000，通过 -q 参数让结果只显示每秒执行的请求数。
+
+
+##Redis 缓存清理  有可能会造成数据丢失 慎重操作
+#redis-cli      
+#dbsize         
+#flushall       
+#exit  
+
+##Redis 缓存清理  有可能会造成数据丢失 慎重操作
+##清空当前redis数据库缓存FLUSHDB
+##flushdb
+##
+##清空整个redis缓存FLUSHALL
+##flushall        
+
+redis常用监控命令
+## 实时监控redis服务收到来自应用的所有命令
+127.0.0.1:6379>monitor
+
+## 查看redis服务的各项状态
+127.0.0.1:6379> info
+127.0.0.1:6379> info CPU         // cpu使用情况
+127.0.0.1:6379> info Keyspace    // 各个db的key的状况，是否有设置超时时间。这是一个很重要的查看项
+
+
+
+
+
+########从redis.conf配置
+bind 127.0.0.1
+protected-mode yes
+port 6380
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+daemonize yes
+supervised no
+pidfile /var/run/redis_6379.pid
+loglevel notice
+logfile ""
+databases 16
+always-show-logo yes
+save 900 1
+save 300 10
+save 60 10000
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir ./
+slave-serve-stale-data yes
+slave-read-only yes
+repl-diskless-sync no
+repl-diskless-sync-delay 5
+repl-disable-tcp-nodelay no
+slave-priority 100
+lazyfree-lazy-eviction no
+lazyfree-lazy-expire no
+lazyfree-lazy-server-del no
+slave-lazy-flush no
+appendonly no
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+aof-load-truncated yes
+aof-use-rdb-preamble no
+lua-time-limit 5000
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+latency-monitor-threshold 0
+notify-keyspace-events ""
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-size -2
+list-compress-depth 0
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+hll-sparse-max-bytes 3000
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+hz 10
+aof-rewrite-incremental-fsync yes
+slaveof 192.168.233.134 6379
+########从配置
+
+
+

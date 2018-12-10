@@ -1,0 +1,24 @@
+
+提交Git自动构建
+
+Jenkins 服务器
+
+
+1. 打开网页-->系统管理 --> 插件管理 --> 可选插件中
+  安装Gitlab Hook Plugin插件  （有安全问题） 
+  安装Build Authorization Token Root Plugin插件
+  
+
+2. 在jenkins服务器上生成token
+  生成随机token： openssl rand -hex 12
+   
+ 
+3. 打开网页 --> 进入项目配置 --> 构建触发器
+   在 触发远程构建 (例如,使用脚本)	--> 身份验证令牌 -->  生成随机token
+   在  Build when a change is pushed to GitLab. GitLab webhook URL: http://x.x.x.x:8080/project/Burgess_web --> 打上勾
+   
+   
+4. 在GitLab
+   选到项目库 --> settings (配置) --> Integrations (集成) --> URL 里填写以下
+   （http://jenkins服务器地址:8080/buildByToken/build?job=项目名&token=token值）  
+   例： http://x.x.x.x:8080/buildByToken/build?job=Burgess_web&token=2dxxxxxxxfyyyyyyya01f

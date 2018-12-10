@@ -1,0 +1,23 @@
+
+Kibana
+
+https://www.elastic.co/downloads/kibana
+
+
+wget https://artifacts.elastic.co/downloads/kibana/kibana-6.3.0-linux-x86_64.tar.gz
+tar zxvf kibana-6.3.0-linux-x86_64.tar.gz
+mv kibana-6.3.0-linux-x86_64.tar.gz /work/kibana
+vi /work/kibana/config/kibana.yml
+##
+server.host: "192.168.233.147"
+elasticsearch.url: "http://192.168.233.147:9200"
+##
+
+
+
+启动
+/work/kibana/bin/kibana
+# nohup /work/kibana/bin/kibana &
+
+访问
+192.168.233.147:5601

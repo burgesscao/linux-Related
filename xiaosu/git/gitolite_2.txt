@@ -1,0 +1,60 @@
+
+
+
+#用户：longfenqi
+#ok$OCwML
+
+yum install -y git perl* lrzsz
+useradd longfenqi
+passwd longfenqi
+mkdir -p /date/Lfq
+chown -R longfenqi:longfenqi /date/
+
+
+su longfenqi
+cd /home/longfenqi
+ssh-keygen -t rsa 
+
+
+cp /home/longfenqi/.ssh/id_rsa.pub /tmp/git_admin.pub
+git clone https://github.com/sitaramc/gitolite 
+mkdir bin
+./gitolite/install -to /home/longfenqi/bin/
+cd bin
+./gitolite setup -pk /tmp/git_admin.pub
+
+cd /date/Lfq
+git clone ssh://longfenqi@192.168.233.132/gitolite-admin 
+
+##修改权限
+vi gitolite-admin/conf/gitolite.conf
+##
+repo longfenqi
+    RW+     =   longfenqi cyh
+##
+
+##上传密钥
+#/date/Lfq/gitolite-admin/keydir
+
+git config --global user.email "longfenqi@localhost.localdomain"
+git config --global user.name "longfenqi"
+
+git add .
+git commit -m "add longfenqi"
+git push
+
+ls /home/longfenqi/repositories/
+
+
+win 7
+ssh-keygen -t rsa -C "cyh@burgess.com"
+git config --global user.email "cyh@burgess.com"
+git config --global user.name "cyh"
+
+##服务器上传密钥
+##git push后
+
+git clone ssh://longfenqi@192.168.233.132/longfenqi
+
+
+git clone ssh://git@47.98.130.143/longfenqi

@@ -1,0 +1,311 @@
+
+
+
+tar zxvf php-7.2.12.tar.gz
+
+./configure --prefix=/work/php --with-config-file-path=/work/php/etc --with-fpm-user=www --with-fpm-group=www --enable-mysqlnd --enable-sysvmsg --disable-debug --with-pcre-regex --with-iconv --with-imap-ssl --enable-fpm --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-iconv-dir --with-freetype-dir=/work/freetype --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir=/usr --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl --enable-mbregex --enable-mbstring --enable-ftp --with-gd --with-openssl --with-mhash --enable-pcntl --enable-sockets --with-xmlrpc --enable-zip --enable-soap --with-gettext --disable-fileinfo --enable-opcache
+
+make && make install
+
+
+
+
+cp php.ini-production /work/php/etc/php.ini
+## cp /work/php/etc/php-fpm.conf.default /work/php/etc/php-fpm.conf
+
+cat > /work/php/etc/php-fpm.conf << EOF
+[global]
+ 
+ 
+[www]
+user = www
+group = www
+listen = /work/php/var/run/php-cgi.sock
+listen.owner = www
+listen.group = www
+listen.mode = 0660
+ 
+pm = dynamic
+pm.max_children = 180
+pm.start_servers = 50
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+ 
+pm.max_requests = 500
+ 
+ 
+ 
+ 
+request_terminate_timeout = 0
+EOF
+
+## 启动
+/work/php/sbin/php-fpm
+
+## 查看
+netstat -tunlp
+
+service iptables stop
+setenforce 0
+
+
+
+php.ini 参数
+expose_php = Off	             默认值：On	禁用将expose_php，防止Web服务器签名，防止在http头里暴露X-Powered-By:PHP/7.2这样的敏感信息。
+short_open_tag = Off	         默认值：On	启用php短标签，<?php?> 这是正常的写法，<??>为短标签。
+max_execution_time = 120	     默认值：30	PHP程序处理请求的最大时间，单位“秒” 。
+max_input_time = 60	             默认值：60	此变量可以以“秒”为单位对通过POST、GET以及PUT方式接收数据时间进行限制。
+memory_limit = 128M	             默认值：128M	允许使用内存的最大值限制。设置脚本可以分配的最大内存量，防止失控的脚本独占服务器内存。
+file_uploads = On	             默认值：On	确定服务器上的PHP脚本是否可以接受HTTP文件上传
+post_max_size = 8M	             默认值：8M	限制通过POST方法可以接受的信息最大量
+upload_max_filesize = 8M	     默认值：2M	限制PHP处理上传文件的最大值，此值必须小于post_max_size值
+date.timezone = Asia/Shanghai	 默认值：	设置PHP执行的默认时间的时区规则。
+mbstring.func_overload=2	     默认值：0	常用的substr()会被自动替换为 mb_substr()。
+                                         0：代表不重载任何函数（默认值）；
+                                         1：代表重载mail()函数；
+                                         2：代表重载str系列字符串处理函数；
+                                         4：代表重载ereg系列正则处理函数；
+                                         7：代表重载所有以上提及的函数。
+										 
+
+
+## 安装PEAR
+/php-5.6.36/build/shtool install -c ext/phar/phar.phar /work/php/bin
+ln -s -f phar.phar /work/php/bin/phar
+## 安装PEAR
+
+#####  http://pecl.php.net/package/gearman 扩展插件  ##### 
+## alpine安装插件时报以下错误
+### Cannot find autoconf. Please check your autoconf installation and the
+### $PHP_AUTOCONF environment variable. Then, rerun this script.
+## http://ftp.gnu.org/gnu/autoconf/
+
+http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.gz
+
+tar zxvf autoconf-2.69.tar.gz
+tar zxvf m4-1.4.18.tar.gz
+yum install perl perl-devel -y 
+ 
+cd m4-1.4.18
+./configure && make && make install
+echo $?
+cd ../autoconf-2.69
+yum install -y autoconf
+./configure && make && make install
+echo $?
+ 
+ 
+## PHP安装amqp插件
+
+yum install -y perl perl-devel librabbitmq-devel 
+tar -zxf amqp-1.9.3.tgz
+cd amqp-1.9.3
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/amqp.so
+
+## PHP安装fileinfo插件
+yum install -y file file-devel
+cd php-5.6.36/ext/fileinfo
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+vim /usr/local/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/fileinfo.so
+
+## PHP安装redis插件
+tar redis-4.1.1.tgz
+cd redis-4.1.1
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+make
+make install
+
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/redis.so
+
+## PHP安装gearman插件
+## yum install epel-release
+yum -y install libgearman libgearman-devel
+tar zxvf gearman-1.1.2.tgz
+cd gearman-1.1.2
+/work/php/bin/phpize
+./configure --with-php-config=/work/php/bin/php-config
+## make: *** [php_gearman.lo] Error 1
+## cp /usr/local/src/gearman-1.1.2/php_gearman.loT /usr/local/src/gearman-1.1.2/php_gearman.lo
+make
+make install
+vim /work/php/etc/php.ini
+;末尾添加
+extension=/work/php/lib/php/extensions/no-debug-non-zts-20131226/gearman.so
+#####
+
+
+
+#####
+ 为php-fpm配置多个pool
+[www]
+listen = /tmp/php-fcgi.sock
+#listen = 127.0.0.1:9000
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+……
+[zhouqun.com]      //添加新的pool
+listen = /tmp/zhouqun.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+
+语法检测
+ /work/php-fpm/sbin/php-fpm -t
+ 
+重新加载配置文件
+/etc/init.d/php-fpm reload
+
+
+为站点设置pool
+vim /work/nginx/conf/vhost/aaa.com.conf
+##
+location ~ \.php$
+    {
+        include fastcgi_params;
+        fastcgi_pass unix:/tmp/zhouqun.sock;    //把fastcgi_pass地址改为和php-fpm.conf中一样的地址就可以
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME /data/wwwroot/default$fastcgi_script_name;
+    }
+##
+
+
+添加php-fpm.conf子配置文件
+vim /work/php-fpm/etc/php-fpm.conf
+[global]
+pid = /work/php-fpm/var/run/php-fpm.pid
+error_log = /work/php-fpm/var/log/php-fpm.log
+include = etc/php-fpm.d/*.conf   //添加
+#在全局变量版块添加参数“include = etc/php-fpm.d/*.conf”。然后可以清除php-fpm配置文件中其他参数，再到php-fpm.d目录下进行单独设置。
+
+创建php-fpm子配置文件
+[root@host php-fpm.d]# vim www.conf
+[www]
+listen = /tmp/php-fcgi.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+[root@host php-fpm.d]# vim zhouqun.conf
+[zhouqun.com]
+listen = /tmp/zhouqun.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+rlimit_files = 1024
+
+
+php-fpm慢执行日志
+[root@host php-fpm.d]# vim /work/php-fpm/etc/php-fpm.d/www.conf
+……
+request_slowlog_timeout = 1                //当请求超过1秒开始记录日志
+slowlog = /work/php-fpm/var/log/www-slow.log           //日志存放地址
+检测并重加载
+[root@host php-fpm.d]# /work/php-fpm/sbin/php-fpm -t
+[root@host php-fpm.d]# /etc/init.d/php-fpm reload
+
+
+试验
+在使用www pool的站点添加文件：
+[root@host php-fpm.d]# vim /data/wwwroot/test.com/sleep.php   //创建一个.php文件，故意让它休眠2秒，让它运行缓慢
+<?php
+echo "test slow log";
+sleep(2);     
+echo "done";
+?>
+检测
+[root@host php-fpm.d]# curl -x127.0.0.1:80 test.com/sleep.php 
+test slow log done
+
+
+查看慢日志
+[root@host php-fpm.d]# tail /work/php-fpm/var/log/www-slow.log 
+
+[12-Sep-2017 23:42:23]  [pool www] pid 4236
+script_filename = /data/wwwroot/test.com/sleep.php
+[0x00007fe027r0e2f5] sleep() /data/wwwroot/test.com/sleep.php:3      //显示文件的第三行导致的访问慢，因为第三行就是sleep命令
+
+
+
+php-fpm进程管理
+php-fpm中pool配置参数解析：
+[root@host php-fpm.d]# vim www.conf
+[www]
+listen = /tmp/php-fcgi.sock
+listen.mode = 666
+user = php-fpm
+group = php-fpm
+pm = dynamic
+#设置进程启动方式（dynamic表示动态，static表示静态）
+#只有此处设置为dynamic，下面的配置才生效
+pm.max_children = 50   //最多可启动的子进程数量
+pm.start_servers = 20    //设定初始启动的进程数量
+pm.min_spare_servers = 5      //表示php-fpm空闲时最少要有几个子进程
+pm.max_spare_servers = 35   //表示php-fpm空闲时最多要有几个子进程
+pm.max_requests = 500          //表示一个子进程最多可接受多少个请求
+rlimit_files = 1024                     //表示每个子进程打开的多少个文件句柄
+request_slowlog_timeout = 1    //当请求超过1秒开始记录日志
+slowlog = /work/php-fpm/var/log/www-slow.log      //日志存放地址
+php_admin_value[open_basedir]=/data/wwwroot/test.com:/tmp/
+
+
+
+
+### PHP参数报错
+PHP option "always_populate_raw_post_data"	on	off	Fail
+
+### 查看模块是否在安装目录
+find / -name gd.so
+
+### 在安装目录直接修改增加
+vim /work/php/lib/php.ini
+##
+extension=gd.so 
+##
+										 
+										 
+										 
+										 

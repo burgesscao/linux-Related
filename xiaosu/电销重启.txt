@@ -1,0 +1,29 @@
+﻿## Redis
+/work/redis-4.0.9/src/redis-server /work/redis-4.0.9/redis.conf
+nohup rservice redis-server start &
+
+## nginx
+/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+
+## supervisor
+/usr/bin/python /usr/bin/supervisord
+## /usr/bin/supervisord
+
+##PHP
+/usr/local/php/sbin/php-fpm
+
+## ss
+ssh -o TCPKeepAlive=yes -o ServerAliveInterval=30 -fNg -L 127.0.0.1:3090:rr-bp14176c350ik5yf9.mysql.rds.aliyuncs.com:3306 dxserver@120.55.172.186 -p 6090
+
+## Tomcat
+/usr/local/apache-tomcat-9.0.0.M17/bin/startup.sh
+
+## zabbix
+/work/zabbix/sbin/zabbix_agentd -c /work/zabbix/etc/zabbix_agentd.conf
+
+同步数据 
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=UserSyncNew --env=production
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=UserDataInit --env=production
+
+数据
+/usr/local/php/bin/php -c /usr/local/php/etc/exec_shell_php.ini index.php --task=DispatchUser --env=production
