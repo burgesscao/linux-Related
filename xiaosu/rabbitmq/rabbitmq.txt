@@ -115,8 +115,8 @@ rabbimqctl change_password burgess 12345678
 rabbitmqctl delete_user burgess
 
 # 显示所有队列
-rabbitmqctl  list_quenens   ##显示所有队列
-
+rabbitmqctl  list_queues    ##显示所有队列
+              
 # 显示所有用户
 rabbitmqctl list_users
 
